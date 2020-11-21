@@ -97,7 +97,7 @@ namespace URCL.NET
 
             //Load the input file, either from the command line arguments or console input.
             Console.Write("urcl/input> ");
-            string file = args.Length > 0 ? args[args.Length - 1] : Console.ReadLine();
+            string file = args.Length > 0 ? args[^1] : Console.ReadLine();
             if (args.Length > 0) Console.WriteLine(file);
 
             //Process the file based on its type.
@@ -193,30 +193,10 @@ namespace URCL.NET
                             var compiler = new LuC.Compiler();
                             var ast = LuC.Parser.Parse(compiler, src).ToArray();
                             compiler.Compile(ast);
-                            compiler.AddDefaultNamespace(new LuC.Tree.Namespace(0, 0, string.Empty, new[]
-                            {
-                                LuC.Tree.Function.CreateNativeFunction(">", LuC.Compiler.NativeInt, new[] 
-                                { 
-                                    new LuC.Tree.Field(0, 0, compiler, LuC.Compiler.NativeInt, "a"),
-                                    new LuC.Tree.Field(0, 0, compiler, LuC.Compiler.NativeInt, "b"),
-                                }, (emit, f) => 
-                                {
-                                    var failed = emit.CreateLabel();
-                                    var end = emit.CreateLabel();
-
-                                    emit.SubtractInt();
-                                    emit.BranchIfNegative(failed);
-                                    emit.BranchIfZero(failed);
-                                    emit.LoadConstant(1);
-                                    emit.Branch(end);
-                                    emit.MarkLabel(failed);
-                                    emit.LoadConstant(0);
-                                    emit.MarkLabel(end);
-                                }, true)
-                            }));
+                            LuC.Standard.AddStandardDefaults(compiler);
                             var emit = new PlatformLuC.Emitters.Urcl(compiler);
                             compiler.Emit(emit, "Program.Main");
-                            IGenerator generator = new X86();
+                            IGenerator generator = new PassthroughGenerator();
                             generator.Generate(Console.WriteLine, new UrclOptimizer
                             {
                                 CullRedundantStackOps = true,
