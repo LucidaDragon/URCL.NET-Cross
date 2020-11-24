@@ -6,11 +6,15 @@ namespace URCL.NET.PlatformSpeedAsm
 {
     public class SpeedAsm : IEmitter
     {
+        public readonly Queue<UrclInstruction> Instructions = new Queue<UrclInstruction>();
+
         private readonly List<UrclInstruction> Urcl = new List<UrclInstruction>();
         private readonly Dictionary<ulong, Label> Labels = new Dictionary<ulong, Label>();
 
         public void Emit(Instruction inst)
         {
+            var start = Urcl.Count;
+
             var result = new UrclInstruction(Operation.NOP)
             {
                 A = inst.Destination.Value,
@@ -200,6 +204,14 @@ namespace URCL.NET.PlatformSpeedAsm
             }
 
             if (result.Operation != Operation.NOP) Urcl.Add(result);
+
+            if (Urcl.Count > start)
+            {
+                foreach (var urcl in Urcl.GetRange(start, Urcl.Count - start))
+                {
+                    Instructions.Enqueue(urcl);
+                }
+            }
         }
 
         public override string ToString()

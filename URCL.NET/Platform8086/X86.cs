@@ -12,8 +12,6 @@ namespace URCL.NET.Platform8086
 
         private const ulong RegistersOffset = 0x500;
         private const ulong StackTop = 0x7BFF;
-        private const ulong CodeStart = 0x7C00;
-        private const ulong MemoryTop = 0x7FFFF;
         private ulong Registers = 0;
         private ulong StackBottom => RegistersOffset + (Registers * 2);
 
@@ -32,9 +30,10 @@ namespace URCL.NET.Platform8086
                 if (max > Registers) Registers = max;
             }
 
-            var x86 = new List<X86Inst>(instructions.Length);
-
-            x86.Add(new X86Inst("org 0x7C00"));
+            var x86 = new List<X86Inst>(instructions.Length)
+            {
+                new X86Inst("org 0x7C00")
+            };
 
             Set(x86.Add, Operand.Reg("sp"), Operand.Imm(StackTop.ToString()));
             Set(x86.Add, Operand.Reg("bp"), Operand.Imm(StackBottom.ToString()));

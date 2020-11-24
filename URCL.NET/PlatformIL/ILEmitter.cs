@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace URCL.NET.Compiler
+namespace URCL.NET.PlatformIL
 {
     public class ILEmitter
     {
@@ -32,7 +32,7 @@ namespace URCL.NET.Compiler
         private FieldBuilder ValueStack;
         private FieldBuilder BenchmarkValue = null;
 
-        public void Emit(string name, IEnumerable<UrclInstruction> instructions)
+        public byte[] Emit(string name, IEnumerable<UrclInstruction> instructions, bool isLibrary)
         {
             var labels = new Dictionary<Label, System.Reflection.Emit.Label>();
 
@@ -331,7 +331,11 @@ namespace URCL.NET.Compiler
             exportModule.Assembly.MainModule.Kind = Mono.Cecil.ModuleKind.Console;
             exportModule.EntryPoint = exportModule.Types.Where(t => t.Name == "Program").First().Methods.Where(m => m.Name == "Main").First();
 
-            exportModule.Write($"{name}.exe");
+            var buffer = new MemoryStream();
+
+            exportModule.Write(buffer);
+
+            return buffer.ToArray();
         }
 
         private static void UseIO(DebuggableEmitter il, ulong port, bool input)
@@ -486,7 +490,7 @@ namespace URCL.NET.Compiler
 
         private class DebuggableEmitter
         {
-            private ILGenerator IL;
+            private readonly ILGenerator IL;
 
             public DebuggableEmitter(ILGenerator il)
             {
