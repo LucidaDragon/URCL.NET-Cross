@@ -301,11 +301,6 @@ namespace LuC
             {
                 Namespaces.Add(ns.Name, ns);
             }
-
-            foreach (var member in ns.Members)
-            {
-                Console.WriteLine($"Import {ns.Name}:{member}");
-            }
         }
 
         public void AddDefaultNamespace(Namespace ns)
