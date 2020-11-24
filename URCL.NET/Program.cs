@@ -180,6 +180,29 @@ namespace URCL.NET
                         RenderMachineState(machine, true);
                     }
                 }
+                else if (file.EndsWith(".sped")) //Compile the SpeedAsm source and output it based on configuration.
+                {
+                    Console.WriteLine($"Processing SpeedAsm source \"{file}\"");
+
+                    try
+                    {
+                        var src = File.ReadAllLines(file);
+                        var emit = new PlatformSpeedAsm.SpeedAsm();
+
+                        if (!SpeedAsm.Compiler.Build(emit, src, out int line, out string error))
+                        {
+                            Console.WriteLine($"Compile Error: Ln {line + 1}, {error}");
+                            Environment.Exit(8);
+                        }
+
+                        Console.WriteLine(emit);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Fatal error occured: {ex}");
+                        Environment.Exit(9);
+                    }
+                }
                 else if (file.EndsWith(".l") || file.EndsWith(".c") || file.EndsWith(".h")) //Compile the LuC source and output it based on configuration.
                 {
                     Console.WriteLine($"Processing LuC source \"{file}\"");
@@ -275,6 +298,8 @@ namespace URCL.NET
                 Console.WriteLine($"File \"{file}\" was not found.");
                 Environment.Exit(1);
             }
+
+            Console.WriteLine("Finished.");
         }
 
         private static void RenderMachineState(UrclMachine machine, bool allCores)

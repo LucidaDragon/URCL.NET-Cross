@@ -15,6 +15,7 @@ namespace LuC
         public const string EmptyExpression = "Expression is empty.";
         public const string InvalidExpression = "Expression is invalid.";
         public const string InvalidLiteral = "Literal is invalid.";
+        public const string InvalidField = "Field is invalid";
         public const string MemberAlreadyExists = "Member with the same name already exists.";
         public const string UndefinedIdentifier = "Identifier is not defined.";
         public const string NamespaceNotResolved = "Namespace of member could not be resolved.";

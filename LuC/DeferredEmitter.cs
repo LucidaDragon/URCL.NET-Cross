@@ -226,5 +226,15 @@ namespace LuC
         {
             Do(nameof(Pop));
         }
+
+        public void LoadGlobal(ulong global)
+        {
+            Do(nameof(LoadGlobal), global);
+        }
+
+        public void StoreGlobal(ulong global)
+        {
+            Do(nameof(StoreGlobal), global);
+        }
     }
 }

@@ -5,6 +5,8 @@
         Invalid,
         [Token(@"n (I)", '\0', 0, Tokens.NameAttribute + "1")]
         NamespaceDeclaration,
+        [Token(@"s (I)", '\0', 1, Tokens.NameAttribute + "1")]
+        StructDeclaration,
         [Token(@"o (I) (O) ?\(( ?I I ?(, ?I I ?)?)\)", '\0', 1, Tokens.TypeAttribute + "1", Tokens.NameAttribute + "2", Tokens.ParametersAttribute + "3")]
         OperatorDeclaration,
         [Token(@"(I) (I) ?\(( ?(I I ?)?(, ?I I ?)*)\)", '\0', 1, Tokens.TypeAttribute + "1", Tokens.NameAttribute + "2", Tokens.ParametersAttribute + "3")]

@@ -284,9 +284,12 @@ namespace URCL.NET.PlatformLuC.Emitters
 
             Emit(new UrclInstruction(Operation.COMPILER_MARKLABEL, label));
 
-            Emit(new UrclInstruction(Operation.ADD, OperandType.Register, CallStack, OperandType.Register, CallStack, OperandType.Immediate, f.FrameSize + 1));
+            if (f.FrameSize != 0)
+            {
+                Emit(new UrclInstruction(Operation.ADD, OperandType.Register, CallStack, OperandType.Register, CallStack, OperandType.Immediate, f.FrameSize + 1));
 
-            Emit(new UrclInstruction(Operation.STORE, OperandType.Register, CallStack, OperandType.Immediate, f.FrameSize));
+                Emit(new UrclInstruction(Operation.STORE, OperandType.Register, CallStack, OperandType.Immediate, f.FrameSize));
+            }
         }
 
         public void EndFunction(Function f)
@@ -318,6 +321,16 @@ namespace URCL.NET.PlatformLuC.Emitters
             Emit(new UrclInstruction(Operation.COMPILER_COMMENT, new[] { "Pop" }));
 
             Emit(new UrclInstruction(Operation.POP, OperandType.Register, Zero));
+        }
+
+        public void LoadGlobal(ulong global)
+        {
+            Emit(new UrclInstruction(Operation.PSH, OperandType.Register, CallStack + 1 + global));
+        }
+
+        public void StoreGlobal(ulong global)
+        {
+            Emit(new UrclInstruction(Operation.POP, OperandType.Register, CallStack + 1 + global));
         }
     }
 }

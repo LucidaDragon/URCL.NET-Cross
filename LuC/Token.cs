@@ -7,6 +7,8 @@
         Whitespace,
         [Token("namespace", 'n')]
         KeywordNamespace,
+        [Token("struct", 's')]
+        KeywordStructure,
         [Token("operator", 'o')]
         KeywordOperator,
         [Token("if", 'f')]

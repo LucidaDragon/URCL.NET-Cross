@@ -6,7 +6,7 @@
 
         public Function Function { get; }
 
-        public FunctionPointer(Function function) : base(function.Start, function.Length)
+        public FunctionPointer(Function function) : base(function.Start, function.Length, function.Name)
         {
             Function = function;
         }
