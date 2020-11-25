@@ -7,16 +7,19 @@ namespace LuC.Tree
     {
         public string Name { get; }
 
-        public IEnumerable<Function> Functions { get; private set; }
+        public IEnumerable<Member> Members { get; private set; }
 
-        public Namespace(int start, int length, string name, IEnumerable<Function> functions) : base(start, length)
+        public IEnumerable<Function> Functions => Members.Where(m => m is Function).Select(f => (Function)f);
+        public IEnumerable<Structure> Structures => Members.Where(m => m is Structure).Select(s => (Structure)s);
+
+        public Namespace(int start, int length, string name, IEnumerable<Member> members) : base(start, length)
         {
             Name = name;
-            Functions = functions.ToArray();
+            Members = members.ToArray();
 
-            foreach (var f in Functions)
+            foreach (var m in Members)
             {
-                f.SetParent(this);
+                m.SetParent(this);
             }
         }
 
@@ -24,7 +27,7 @@ namespace LuC.Tree
         {
             if (ns.Name != Name) new SourceError(ns.Start, ns.Length, $"Different namespaces \"{ns.Name}\" and \"{Name}\" can not be merged.");
 
-            Functions = Functions.Concat(ns.Functions);
+            Members = Members.Concat(ns.Members);
         }
     }
 }

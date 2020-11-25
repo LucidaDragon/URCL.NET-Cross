@@ -258,6 +258,18 @@ namespace URCL.NET
             if (types.Length >= 4) throw new Exception($"Instructions with {types.Length} operands are not supported.");
         }
 
+        public string GetComponent(int index)
+        {
+            return index switch
+            {
+                0 => Operation.ToString(),
+                1 => GetOperandString(AType, A, ALabel),
+                2 => GetOperandString(BType, B, BLabel),
+                3 => GetOperandString(CType, C, CLabel),
+                _ => throw new IndexOutOfRangeException(),
+            };
+        }
+
         public override string ToString()
         {
             if (Operation == Operation.COMPILER_PRAGMA)
@@ -297,6 +309,7 @@ namespace URCL.NET
         {
             return type switch
             {
+                OperandType.None => string.Empty,
                 OperandType.Register => $"R{value}",
                 OperandType.Immediate => value.ToString(),
                 OperandType.Label => $".L0x{label.GetHashCode():X}",

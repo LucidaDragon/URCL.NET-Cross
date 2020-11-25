@@ -20,6 +20,10 @@ namespace LuC
 
         void StoreLocal(ulong local);
 
+        void LoadGlobal(ulong global);
+
+        void StoreGlobal(ulong global);
+
         void Branch(ILabel label);
 
         void BranchIfZero(ILabel label);

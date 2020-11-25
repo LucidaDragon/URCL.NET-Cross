@@ -22,7 +22,7 @@ namespace LuC
         public void Emit(IEmitter emit, string entrypoint)
         {
             var root = new InvalidObject();
-            var f = ResolveFunction(root, entrypoint, new string[0]);
+            var f = ResolveFunction(root, entrypoint, new[] { Void });
             Emit(emit, f);
 
             var emitted = new List<Function> { f };
@@ -211,6 +211,7 @@ namespace LuC
 
                 EmitCall(emit, ResolveFunction(call, call.Reference));
             }
+            else if (e is VoidExpression v) { }
             else
             {
                 throw new SourceError(e, SourceError.InvalidExpression);
@@ -247,19 +248,33 @@ namespace LuC
             }
         }
 
-        public void EmitLoadType(IEmitter emit, ulong startIndex, DataType type)
+        public void EmitLoadType(IEmitter emit, ulong startIndex, DataType type, bool global = false)
         {
             for (ulong i = 0; i < type.Size; i++)
             {
-                emit.LoadLocal(startIndex + i);
+                if (global)
+                {
+                    emit.StoreGlobal(startIndex + i);
+                }
+                else
+                {
+                    emit.LoadLocal(startIndex + i);
+                }
             }
         }
 
-        public void EmitStoreType(IEmitter emit, ulong startIndex, DataType type)
+        public void EmitStoreType(IEmitter emit, ulong startIndex, DataType type, bool global = false)
         {
             for (ulong i = type.Size; i > 0; i--)
             {
-                emit.StoreLocal(startIndex + (i - 1));
+                if (global)
+                {
+                    emit.StoreGlobal(startIndex + (i - 1));
+                }
+                else
+                {
+                    emit.StoreLocal(startIndex + (i - 1));
+                }
             }
         }
 
@@ -278,11 +293,6 @@ namespace LuC
 
         public void Compile(Namespace ns)
         {
-            foreach (var f in ns.Functions)
-            {
-                FunctionLayouts[f] = new FunctionLayout(f);
-            }
-
             if (Namespaces.TryGetValue(ns.Name, out Namespace current))
             {
                 current.Merge(ns);
@@ -375,13 +385,50 @@ namespace LuC
 
                         if (ns != null)
                         {
-                            localContext = ns.Functions.Where(f => f.Name == name).Select(f => new FunctionPointer(f));
+                            localContext = ns.Members
+                                .Where(m => m.Name == name)
+                                .Select(m =>
+                                {
+                                    if (m is Function f)
+                                    {
+                                        return new FunctionPointer(f);
+                                    }
+                                    else if (m is DataType t)
+                                    {
+                                        return t;
+                                    }
+                                    else
+                                    {
+                                        return null;
+                                    }
+                                })
+                                .Where(m => m != null);
+
+                            if (localContext.Any())
+                            {
+                                return localContext;
+                            }
                         }
 
                         return Namespaces.Values
                             .Where(otherNs => (ns is null || !otherNs.Equals(ns)) && name.StartsWith($"{otherNs.Name}."))
-                            .SelectMany(otherNs => otherNs.Functions.Where(f => f.Name == name.Substring(otherNs.Name.Length + 1)))
-                            .Select(f => new FunctionPointer(f))
+                            .SelectMany(otherNs => otherNs.Members.Where(f => f.Name == name.Substring(otherNs.Name.Length + 1)))
+                            .Select(m =>
+                            {
+                                if (m is Function f)
+                                {
+                                    return new FunctionPointer(f);
+                                }
+                                else if (m is DataType t)
+                                {
+                                    return t;
+                                }
+                                else
+                                {
+                                    return null;
+                                }
+                            })
+                            .Where(m => m != null)
                             .Concat(
                                 fields.Where(field => field.Name == name)
                                 .Select(field => field.Type)
@@ -597,14 +644,14 @@ namespace LuC
         {
             public override ulong Size => 1;
 
-            public NativeIntType() : base(0, 0) { }
+            public NativeIntType() : base(0, 0, Compiler.NativeInt) { }
         }
 
         private class VoidType : DataType
         {
             public override ulong Size => 0;
 
-            public VoidType() : base(0, 0) { }
+            public VoidType() : base(0, 0, Compiler.Void) { }
         }
     }
 }

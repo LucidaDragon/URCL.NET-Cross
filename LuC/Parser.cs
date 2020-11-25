@@ -24,7 +24,7 @@ namespace LuC
                     case MetaToken.NamespaceDeclaration:
                         if (token.Attributes.TryGetValue(Tokens.Name, out string name))
                         {
-                            yield return new Namespace(token.GetSourceIndex(), token.GetSourceLength(), name, ParseFunctions(compiler, GetChildBlock(tokens, i, out int blockIndex).LogicalChildren));
+                            yield return new Namespace(token.GetSourceIndex(), token.GetSourceLength(), name, ParseMembers(compiler, GetChildBlock(tokens, i, out int blockIndex).LogicalChildren));
                             i = blockIndex;
                         }
                         else
@@ -40,7 +40,7 @@ namespace LuC
             }
         }
 
-        public static IEnumerable<Function> ParseFunctions(Compiler compiler, ArraySegment<TokenData<MetaToken>> tokens)
+        public static IEnumerable<Member> ParseMembers(Compiler compiler, ArraySegment<TokenData<MetaToken>> tokens)
         {
             for (int i = 0; i < tokens.Count; i++)
             {
@@ -49,16 +49,46 @@ namespace LuC
                 switch (token.Type)
                 {
                     case MetaToken.FunctionDeclaration:
-                        if (token.Attributes.TryGetValue(Tokens.Name, out string name) &&
-                            token.Attributes.TryGetValue(Tokens.Type, out string returnType) &&
-                            token.Attributes.TryGetValue(Tokens.Parameters, out string parameters))
                         {
-                            yield return new Function(token.GetSourceIndex(), token.GetSourceLength(), name, returnType, ParseFunctionParameters(compiler, token, parameters), ParseCodeBody(compiler, GetChildBlock(tokens, i, out int blockIndex).LogicalChildren));
-                            i = blockIndex;
+                            if (token.Attributes.TryGetValue(Tokens.Name, out string name) &&
+                                token.Attributes.TryGetValue(Tokens.Type, out string returnType) &&
+                                token.Attributes.TryGetValue(Tokens.Parameters, out string parameters))
+                            {
+                                yield return new Function(token.GetSourceIndex(), token.GetSourceLength(), name, returnType, ParseFunctionParameters(compiler, token, parameters), ParseCodeBody(compiler, GetChildBlock(tokens, i, out int blockIndex).LogicalChildren));
+                                i = blockIndex;
+                            }
+                            else
+                            {
+                                throw new SourceError(token.GetSourceIndex(), token.GetSourceLength(), SourceError.MissingAttribute);
+                            }
                         }
-                        else
+                        break;
+                    case MetaToken.StructDeclaration:
                         {
-                            throw new SourceError(token.GetSourceIndex(), token.GetSourceLength(), SourceError.MissingAttribute);
+                            if (token.Attributes.TryGetValue(Tokens.Name, out string name))
+                            {
+                                yield return new Structure(token.GetSourceIndex(), token.GetSourceLength(), name, ParseStructureFields(ParseCodeBody(compiler, GetChildBlock(tokens, i, out int blockIndex).LogicalChildren)));
+                                i = blockIndex;
+                            }
+                            else
+                            {
+                                throw new SourceError(token.GetSourceIndex(), token.GetSourceLength(), SourceError.MissingAttribute);
+                            }
+                        }
+                        break;
+                    case MetaToken.LocalDeclaration:
+                        {
+                            if (token.Attributes.TryGetValue(Tokens.Type, out string type) &&
+                                    token.Attributes.TryGetValue(Tokens.Name, out string name))
+                            {
+                                GetChildBlock(tokens, i, out int endIndex, MetaToken.EndStatement);
+                                yield return new GlobalDeclarationStatement(token.GetSourceIndex(), token.GetSourceLength(), new Field(token.GetSourceIndex(), token.GetSourceLength(), compiler, type, name));
+                                i = endIndex;
+                            }
+                            else
+                            {
+                                throw new SourceError(token.GetSourceIndex(), token.GetSourceLength(), SourceError.MissingAttribute);
+                            }
                         }
                         break;
                     case MetaToken.Whitespace:
@@ -71,7 +101,7 @@ namespace LuC
 
         public static IEnumerable<Field> ParseFunctionParameters(Compiler compiler, TokenData<MetaToken> target, string parameters)
         {
-            if (parameters.Trim().Length == 0) return new Field[0];
+            if (parameters.Trim().Length == 0) return new[] { new Field(target.Start, target.Length, compiler, Compiler.Void, string.Empty) };
 
             return parameters.Split(',').Select(param =>
             {
@@ -86,6 +116,21 @@ namespace LuC
                     throw new SourceError(target.GetSourceIndex(), target.GetSourceLength(), SourceError.InvalidParameterSyntax);
                 }
             });
+        }
+
+        public static IEnumerable<Field> ParseStructureFields(IEnumerable<Statement> body)
+        {
+            foreach (var s in body)
+            {
+                if (s is LocalDeclarationStatement declaration)
+                {
+                    yield return declaration.Local;
+                }
+                else
+                {
+                    throw new SourceError(s, SourceError.InvalidField);
+                }
+            }
         }
 
         public static IEnumerable<Statement> ParseCodeBody(Compiler compiler, ArraySegment<TokenData<MetaToken>> tokens)
@@ -139,7 +184,7 @@ namespace LuC
                                 token.Attributes.TryGetValue(Tokens.Name, out string name))
                             {
                                 GetChildBlock(tokens, i, out int endIndex, MetaToken.EndStatement);
-                                yield return new LocalDeclarationStatement(token.GetSourceIndex(), token.GetSourceLength(), new Field(token.GetSourceIndex(), token.GetSourceLength(), new UnresolvedDataType(token.GetSourceIndex(), token.GetSourceLength(), compiler, type), name));
+                                yield return new LocalDeclarationStatement(token.GetSourceIndex(), token.GetSourceLength(), new Field(token.GetSourceIndex(), token.GetSourceLength(), compiler, type, name));
                                 i = endIndex;
                             }
                             else
@@ -169,7 +214,7 @@ namespace LuC
         {
             if (tokens.Count == 0)
             {
-                throw new SourceError(target.GetSourceIndex(), target.GetSourceLength(), SourceError.EmptyExpression);
+                return new VoidExpression(target.Start, target.Length);
             }
             else if (tokens.Count == 1)
             {

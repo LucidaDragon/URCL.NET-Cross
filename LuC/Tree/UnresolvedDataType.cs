@@ -8,7 +8,7 @@
 
         private readonly Compiler Compiler;
 
-        public UnresolvedDataType(int start, int length, Compiler compiler, string type) : base(start, length)
+        public UnresolvedDataType(int start, int length, Compiler compiler, string type) : base(start, length, type)
         {
             Type = type;
             Compiler = compiler;

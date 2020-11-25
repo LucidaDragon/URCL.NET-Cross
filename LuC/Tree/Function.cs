@@ -4,9 +4,8 @@ using System.Linq;
 
 namespace LuC.Tree
 {
-    public class Function : TreeObject
+    public class Function : Member
     {
-        public string Name { get; }
         public string ReturnType { get; }
         public Field[] Parameters { get; }
         public Field[] Locals { get; }
@@ -15,11 +14,10 @@ namespace LuC.Tree
         public bool Inline { get; private set; } = false;
         public DeferredEmitter NativeBody { get; private set; }
 
-        public ulong FrameSize => Parameters.Concat(Locals).Select(f => f.Type.Size).Aggregate((a, b) => a + b);
+        public ulong FrameSize => Parameters.Length == 0 && Locals.Length == 0 ? 0 : Parameters.Concat(Locals).Select(f => f.Type.Size).Aggregate((a, b) => a + b);
 
-        public Function(int start, int length, string name, string returnType, IEnumerable<Field> parameters, IEnumerable<Statement> body) : base(start, length)
+        public Function(int start, int length, string name, string returnType, IEnumerable<Field> parameters, IEnumerable<Statement> body) : base(start, length, name)
         {
-            Name = name;
             ReturnType = returnType;
             Parameters = parameters.ToArray();
             Body = body.ToArray();

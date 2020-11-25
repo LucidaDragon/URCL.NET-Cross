@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LuC\LuC.csproj" />
-    <ProjectReference Include="..\TestCode\TestCode.csproj" />
+    <ProjectReference Include="..\SpeedAsm\SpeedAsm.csproj" />
   </ItemGroup>
 
 </Project>

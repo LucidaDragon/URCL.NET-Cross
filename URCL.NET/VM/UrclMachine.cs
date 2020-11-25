@@ -448,7 +448,7 @@ namespace URCL.NET.VM
                     case Operation.BRC:
                         if (inst.Exists(Operand.A))
                         {
-                            if (Flags > uint.MaxValue) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if (Flags > Host.BitMask) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -458,7 +458,7 @@ namespace URCL.NET.VM
                     case Operation.BNC:
                         if (inst.Exists(Operand.A))
                         {
-                            if (Flags <= uint.MaxValue) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if (Flags <= Host.BitMask) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -565,53 +565,32 @@ namespace URCL.NET.VM
 
                 if (argCount >= 1)
                 {
-                    switch (inst.AType)
+                    args[0] = inst.AType switch
                     {
-                        case OperandType.Register:
-                            args[0] = new Register(inst.A);
-                            break;
-                        case OperandType.Immediate:
-                            args[0] = inst.A;
-                            break;
-                        case OperandType.Label:
-                        default:
-                            args[0] = ResolveValue(inst.ALabel);
-                            break;
-                    }
+                        OperandType.Register => new Register(inst.A),
+                        OperandType.Immediate => inst.A,
+                        _ => ResolveValue(inst.ALabel),
+                    };
                 }
 
                 if (argCount >= 2)
                 {
-                    switch (inst.BType)
+                    args[1] = inst.BType switch
                     {
-                        case OperandType.Register:
-                            args[1] = new Register(inst.B);
-                            break;
-                        case OperandType.Immediate:
-                            args[1] = inst.B;
-                            break;
-                        case OperandType.Label:
-                        default:
-                            args[1] = ResolveValue(inst.BLabel);
-                            break;
-                    }
+                        OperandType.Register => new Register(inst.B),
+                        OperandType.Immediate => inst.B,
+                        _ => ResolveValue(inst.BLabel),
+                    };
                 }
 
                 if (argCount >= 3)
                 {
-                    switch (inst.CType)
+                    args[2] = inst.CType switch
                     {
-                        case OperandType.Register:
-                            args[2] = new Register(inst.C);
-                            break;
-                        case OperandType.Immediate:
-                            args[2] = inst.C;
-                            break;
-                        case OperandType.Label:
-                        default:
-                            args[2] = ResolveValue(inst.CLabel);
-                            break;
-                    }
+                        OperandType.Register => new Register(inst.C),
+                        OperandType.Immediate => inst.C,
+                        _ => ResolveValue(inst.CLabel),
+                    };
                 }
 
                 return new ResolvedInstruction(inst.Operation, args);

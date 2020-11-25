@@ -51,9 +51,9 @@ namespace URCL.NET.Compiler
                                 result = null;
                             }
                         }
-                        catch (Exception ex)
+                        catch (ParserError ex)
                         {
-                            throw new Exception($"Error on line {index + 1}: \"{line}\" {ex.Message}");
+                            throw new ParserError($"Error on line {index + 1}: \"{line}\" {ex.Message}");
                         }
 
                         if (result != null) yield return result;
@@ -78,7 +78,7 @@ namespace URCL.NET.Compiler
                 {
                     var label = new Label();
 
-                    if (labels.ContainsKey(line)) throw new Exception("Label already defined.");
+                    if (labels.ContainsKey(line)) throw new ParserError("Label already defined.");
 
                     labels.Add(line, label);
 
@@ -90,7 +90,7 @@ namespace URCL.NET.Compiler
                 }
                 else
                 {
-                    throw new Exception("Label could not be registered.");
+                    throw new ParserError("Label could not be registered.");
                 }
             }
             else if (line.StartsWith('@') && !labelsOnly)
@@ -109,7 +109,7 @@ namespace URCL.NET.Compiler
                     var values = new object[args.Length - 1];
                     var valueTypes = new OperandType[values.Length];
 
-                    if (values.Length != allowedTypes.Length) throw new Exception($"Expected {allowedTypes.Length} operands but found {values.Length} instead.");
+                    if (values.Length != allowedTypes.Length) throw new ParserError($"Expected {allowedTypes.Length} operands but found {values.Length} instead.");
 
                     for (int i = 0; i < values.Length; i++)
                     {
@@ -124,7 +124,7 @@ namespace URCL.NET.Compiler
                             }
                             else
                             {
-                                throw new Exception($"Label \"{arg}\" is not defined.");
+                                throw new ParserError($"Label \"{arg}\" is not defined.");
                             }
                         }
                         else if (arg.StartsWith("R") || arg.StartsWith('$'))
@@ -136,7 +136,7 @@ namespace URCL.NET.Compiler
                             }
                             else
                             {
-                                throw new Exception($"Invalid register \"{arg}\".");
+                                throw new ParserError($"Invalid register \"{arg}\".");
                             }
                         }
                         else if (arg.StartsWith("0x") && ulong.TryParse(arg[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong v))
@@ -151,12 +151,12 @@ namespace URCL.NET.Compiler
                         }
                         else
                         {
-                            throw new Exception($"Invalid operand \"{arg}\".");
+                            throw new ParserError($"Invalid operand \"{arg}\".");
                         }
 
                         if (!allowedTypes[i].HasFlag(valueTypes[i]))
                         {
-                            throw new Exception($"Operand {i + 1} of {op} does not accept {valueTypes[i].ToString().ToLower()}s.");
+                            throw new ParserError($"Operand {i + 1} of {op} does not accept {valueTypes[i].ToString().ToLower()}s.");
                         }
                     }
 
@@ -168,7 +168,7 @@ namespace URCL.NET.Compiler
                 }
                 else
                 {
-                    throw new Exception($"Unknown instruction {args[0]}.");
+                    throw new ParserError($"Unknown instruction {args[0]}.");
                 }
             }
             else

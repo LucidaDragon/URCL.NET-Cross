@@ -9,7 +9,7 @@ namespace LuC.Tree
 
         public Field[] Fields { get; }
 
-        public Structure(int start, int length, IEnumerable<Field> fields) : base(start, length)
+        public Structure(int start, int length, string name, IEnumerable<Field> fields) : base(start, length, name)
         {
             Fields = fields.ToArray();
 

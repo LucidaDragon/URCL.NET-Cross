@@ -68,6 +68,11 @@ namespace LuC
             Console.WriteLine(nameof(LoadFunctionPointer) + $", {f}");
         }
 
+        public void LoadGlobal(ulong global)
+        {
+            Console.WriteLine(nameof(LoadGlobal) + $", [{global}]");
+        }
+
         public void LoadLocal(ulong local)
         {
             Console.WriteLine(nameof(LoadLocal) + $", [{local}]");
@@ -116,6 +121,11 @@ namespace LuC
         public void RightShiftInt()
         {
             Console.WriteLine(nameof(RightShiftInt));
+        }
+
+        public void StoreGlobal(ulong global)
+        {
+            Console.WriteLine(nameof(StoreGlobal) + $", [{global}]");
         }
 
         public void StoreLocal(ulong local)
