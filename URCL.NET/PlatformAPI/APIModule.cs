@@ -23,19 +23,22 @@ namespace URCL.NET.PlatformAPI
                     try
                     {
                         using var connection = tcp.AcceptTcpClient();
-                        using var reader = new StreamReader(connection.GetStream());
-                        using var writer = new StreamWriter(connection.GetStream());
+                        using var stream = connection.GetStream();
+                        using var reader = new BinaryReader(stream);
+                        using var writer = new BinaryWriter(stream);
 
                         var builder = new ConfigurationBuilder();
-                        var configCount = ushort.Parse(reader.ReadLine());
+                        var configCount = ushort.Parse(reader.ReadString());
                         for (ushort i = 0; i < configCount; i++)
                         {
-                            builder.Configure(reader.ReadLine(), writer.WriteLine);
+                            builder.Configure(reader.ReadString(), writer.Write);
                         }
 
-                        writer.WriteLine(string.Empty);
+                        writer.Write(string.Empty);
 
-                        var lineCount = ulong.Parse(reader.ReadLine());
+                        stream.Flush();
+
+                        var lineCount = ulong.Parse(reader.ReadString());
 
                         if (lineCount == 0) continue;
 
@@ -43,7 +46,7 @@ namespace URCL.NET.PlatformAPI
 
                         for (ulong i = 0; i < lineCount; i++)
                         {
-                            buffer.Add(reader.ReadLine());
+                            buffer.Add(reader.ReadString());
                         }
 
                         IEnumerable<UrclInstruction> instructions;
@@ -54,13 +57,15 @@ namespace URCL.NET.PlatformAPI
                         }
                         catch (ParserError ex)
                         {
-                            writer.WriteLine(ex.Message);
+                            writer.Write(ex.Message);
+                            stream.Flush();
                             continue;
                         }
 
-                        EmulatorHost.Emulator(configuration, instructions, writer.WriteLine, () => { });
+                        EmulatorHost.Emulator(configuration, instructions, writer.Write, () => { }, false);
 
-                        writer.WriteLine(string.Empty);
+                        writer.Write(string.Empty);
+                        stream.Flush();
                     }
                     catch (Exception ex)
                     {

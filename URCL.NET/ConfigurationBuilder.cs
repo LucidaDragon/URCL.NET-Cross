@@ -50,6 +50,17 @@ namespace URCL.NET
                             errorOut($"Value \"{configArgs[1]}\" is not valid for configuration \"{prop.Name}\".");
                         }
                     }
+                    else if (prop.PropertyType == typeof(ushort))
+                    {
+                        if (ushort.TryParse(configArgs[1], out ushort value))
+                        {
+                            prop.SetValue(Configuration, value);
+                        }
+                        else
+                        {
+                            errorOut($"Value \"{configArgs[1]}\" is not valid for configuration \"{prop.Name}\".");
+                        }
+                    }
                     else if (prop.PropertyType == typeof(ulong))
                     {
                         if (ulong.TryParse(configArgs[1], out ulong value))

@@ -6,11 +6,11 @@ namespace URCL.NET.VM
 {
     public static class EmulatorHost
     {
-        public static void Emulator(Configuration configuration, IEnumerable<UrclInstruction> instructions, Action<string> output, Action wait)
+        public static void Emulator(Configuration configuration, IEnumerable<UrclInstruction> instructions, Action<string> output, Action wait, bool allowConsole)
         {
             instructions = instructions.Append(new UrclInstruction(Operation.HLT));
 
-            var machine = new UrclMachine(1, configuration.Registers, configuration.AvailableMemory, configuration.AvailableROM, configuration.ExecuteOnROM, configuration.WordBitMask, new ConsoleIO());
+            var machine = new UrclMachine(1, configuration.Registers, configuration.AvailableMemory, configuration.AvailableROM, configuration.ExecuteOnROM, configuration.WordBitMask, allowConsole ? new ConsoleIO() : null);
 
             if (configuration.ExecuteOnROM)
             {
@@ -23,6 +23,7 @@ namespace URCL.NET.VM
 
             var start = Environment.TickCount64;
             var timeLimit = (long)configuration.MaxTime + start;
+            var fault = false;
 
             while (!machine.Halted && (configuration.StepThrough || timeLimit - Environment.TickCount64 > 0))
             {
@@ -47,11 +48,12 @@ namespace URCL.NET.VM
                 catch (UrclMachine.InvalidOperationException ex)
                 {
                     output($"Fault! {ex.Message}");
+                    fault = true;
                     break;
                 }
             }
 
-            if (!machine.Halted) output("Maximum time for execution was exceeded!");
+            if (!machine.Halted && !fault) output("Maximum time for execution was exceeded!");
 
             output($"System halted. Execution finished in {Environment.TickCount64 - start}ms ({machine.Ticks} ticks).");
             output("Dumping final machine state...");

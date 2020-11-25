@@ -58,7 +58,7 @@ namespace URCL.NET
 
                         if (configuration.Emulate)
                         {
-                            EmulatorHost.Emulator(configuration, instructions, Console.WriteLine, () => { Console.ReadKey(true); });
+                            EmulatorHost.Emulator(configuration, instructions, Console.WriteLine, () => { Console.ReadKey(true); }, true);
                         }
                         else
                         {
@@ -87,7 +87,7 @@ namespace URCL.NET
                                 return;
                             }
 
-                            EmulatorHost.Emulator(configuration, Parser.Parse(lines), Console.WriteLine, () => { Console.ReadKey(true); });
+                            EmulatorHost.Emulator(configuration, Parser.Parse(lines), Console.WriteLine, () => { Console.ReadKey(true); }, true);
                         }
                         else
                         {
