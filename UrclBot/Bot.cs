@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,8 +17,9 @@ namespace UrclBot
         private readonly UrclInterface Urcl;
         private readonly DiscordSocketClient Client;
         private readonly string Token;
-        private readonly ConcurrentQueue<Tuple<SocketMessage, Attachment>> Jobs = new ConcurrentQueue<Tuple<SocketMessage, Attachment>>();
+        private readonly ConcurrentQueue<BotTask> Jobs = new ConcurrentQueue<BotTask>();
         private readonly Thread Worker;
+        private readonly AutoResetEvent WaitForConnect = new AutoResetEvent(false);
         private readonly AutoResetEvent Sleep = new AutoResetEvent(false);
         private bool Quit = false;
 
@@ -28,36 +30,37 @@ namespace UrclBot
 
             Worker = new Thread(async () =>
             {
+                WaitForConnect.WaitOne();
+
                 while (true)
                 {
+                    output($"{DateTime.Now} Idle");
+                    await Client.SetStatusAsync(UserStatus.Idle);
+
                     Sleep.WaitOne();
 
                     if (Quit) break;
 
-                    while (Jobs.TryDequeue(out Tuple<SocketMessage, Attachment> job))
+                    while (Jobs.TryDequeue(out BotTask job))
                     {
-                        var m = job.Item1;
-                        var attach = job.Item2;
+                        output($"{DateTime.Now} Active");
+                        await Client.SetStatusAsync(UserStatus.Online);
 
                         try
                         {
-                            using var fetch = new WebClient();
-                            var content = await fetch.DownloadStringTaskAsync(attach.Url);
-
                             var buffer = new List<string>();
 
-                            await Urcl.SubmitJob(content, buffer.Add);
+                            await Urcl.SubmitJob(await job.GetContent(), buffer.Add);
 
-                            Reply(m, $"Result of \"{attach.Filename}\":{Environment.NewLine}{string.Join(Environment.NewLine, buffer)}");
+                            Reply(job.Source, $"Result of \"{job.Name}\":{Environment.NewLine}{string.Join(Environment.NewLine, buffer)}");
                         }
                         catch (Exception ex)
                         {
-                            Reply(m, $"API Error: {ex.Message}");
+                            Reply(job.Source, $"API Error: {ex.Message}");
                         }
                     }
                 }
             });
-            Worker.Start();
 
             Client = new DiscordSocketClient();
 
@@ -68,27 +71,52 @@ namespace UrclBot
                 return Task.CompletedTask;
             };
 
+            Client.Ready += () =>
+            {
+                WaitForConnect.Set();
+                return Task.CompletedTask;
+            };
+
             Client.MessageReceived += (m) =>
             {
                 foreach (var user in m.MentionedUsers)
                 {
                     if (user.IsBot && user.Id == Client.CurrentUser.Id)
                     {
+                        var foundFile = false;
+
                         foreach (var attach in m.Attachments)
                         {
                             if (attach.Filename.ToLower().EndsWith("urcl"))
                             {
+                                foundFile = true;
+
                                 if (attach.Size <= ushort.MaxValue)
                                 {
                                     Reply(m, $"\"{attach.Filename}\" is now in queue.");
 
-                                    Jobs.Enqueue(new Tuple<SocketMessage, Attachment>(m, attach));
+                                    Jobs.Enqueue(new BotTask(m, attach));
                                     Sleep.Set();
                                 }
                                 else
                                 {
                                     Reply(m, $"Attached file \"{attach.Filename}\" is too large. (Must be {ushort.MaxValue} bytes or less)");
                                 }
+                            }
+                        }
+
+                        if (!foundFile)
+                        {
+                            var match = Regex.Match(m.Content, @"(```((.|\n)*)```)");
+
+                            if (match.Success)
+                            {
+                                Jobs.Enqueue(new BotTask(m, match.Groups[2].Value));
+                                Sleep.Set();
+                            }
+                            else
+                            {
+                                Reply(m, "Code block was not specified.");
                             }
                         }
                     }
@@ -113,6 +141,7 @@ namespace UrclBot
         {
             await Client.LoginAsync(TokenType.Bot, Token);
             await Client.StartAsync();
+            Worker.Start();
         }
 
         public void Dispose()
@@ -133,7 +162,7 @@ namespace UrclBot
             }
             else
             {
-                await source.Channel.SendFileAsync(new MemoryStream(Encoding.UTF8.GetBytes(message)), "Process_Result", ".");
+                await source.Channel.SendFileAsync(new MemoryStream(Encoding.UTF8.GetBytes(message)), "message.txt", "Message was too large to display...");
             }
         }
     }

@@ -10,7 +10,7 @@ namespace URCL.NET.VM
         {
             instructions = instructions.Append(new UrclInstruction(Operation.HLT));
 
-            var machine = new UrclMachine(1, configuration.Registers, configuration.AvailableMemory, configuration.AvailableROM, configuration.ExecuteOnROM, configuration.WordBitMask, allowConsole ? new ConsoleIO() : null);
+            var machine = new UrclMachine(1, configuration.Registers, configuration.MaxStack, configuration.AvailableMemory, configuration.AvailableROM, configuration.ExecuteOnROM, configuration.WordBitMask, allowConsole ? new ConsoleIO() : null);
 
             if (configuration.ExecuteOnROM)
             {

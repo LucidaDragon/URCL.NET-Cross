@@ -30,12 +30,12 @@ namespace URCL.NET.VM
         public ulong CurrentCore { get; set; } = 0;
         public ulong Ticks { get; set; } = 0;
 
-        public UrclMachine(ulong cores, ulong registers, ulong ram, ulong rom, bool coresExecOnROM = false, ulong bitmask = uint.MaxValue, IO ioBus = null)
+        public UrclMachine(ulong cores, ulong registers, ulong maxStack, ulong ram, ulong rom, bool coresExecOnROM = false, ulong bitmask = uint.MaxValue, IO ioBus = null)
         {
             Cores = new Core[cores];
             for (ulong i = 0; i < cores; i++)
             {
-                Cores[i] = new Core(this, coresExecOnROM, registers);
+                Cores[i] = new Core(this, coresExecOnROM, registers, maxStack);
             }
 
             RAM = new object[ram];
@@ -113,6 +113,7 @@ namespace URCL.NET.VM
             public UrclMachine Host { get; set; }
             public Stack<ulong> ValueStack { get; set; } = new Stack<ulong>();
             public Stack<ulong> CallStack { get; set; } = new Stack<ulong>();
+            public ulong MaxStack { get; set; }
             public ulong InstructionPointer { get; set; } = 0;
             public ulong Ticks { get; set; } = 0;
             public bool Halted { get; set; } = false;
@@ -120,11 +121,12 @@ namespace URCL.NET.VM
             public ulong[] Registers { get; set; }
             public ulong Flags { get; set; } = 0;
 
-            public Core(UrclMachine host, bool executeFromROM, ulong registers)
+            public Core(UrclMachine host, bool executeFromROM, ulong registers, ulong maxStack)
             {
                 Host = host;
                 ExecuteFromROM = executeFromROM;
                 Registers = new ulong[registers];
+                MaxStack = maxStack;
             }
 
             public bool Clock()
@@ -395,6 +397,7 @@ namespace URCL.NET.VM
                         if (inst.Exists(Operand.A))
                         {
                             ValueStack.Push(ResolveValue(inst[Operand.A]));
+                            if ((ulong)ValueStack.Count > MaxStack) throw new InvalidOperationException(this, "Stack overflow occured.");
                         }
                         else
                         {
@@ -489,6 +492,7 @@ namespace URCL.NET.VM
                         if (inst.Exists(Operand.A))
                         {
                             CallStack.Push(InstructionPointer);
+                            if ((ulong)CallStack.Count > MaxStack) throw new InvalidOperationException(this, "Stack overflow occured.");
                             InstructionPointer = ResolveValue(inst[Operand.A]);
                         }
                         else

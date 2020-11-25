@@ -58,6 +58,11 @@ namespace URCL.NET
         public ulong MaxTime { get; set; } = 1000;
 
         /// <summary>
+        /// The maximum number of items on the emulator stack.
+        /// </summary>
+        public ulong MaxStack { get; set; } = 1024;
+
+        /// <summary>
         /// Disable breakpoints while emulating.
         /// </summary>
         [Config("Disable breakpoints while emulating.")]
