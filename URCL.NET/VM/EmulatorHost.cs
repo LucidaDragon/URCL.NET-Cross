@@ -8,7 +8,19 @@ namespace URCL.NET.VM
     {
         public static void Emulator(Configuration configuration, IEnumerable<UrclInstruction> instructions, Action<string> output, Action wait, bool allowConsole)
         {
-            instructions = instructions.Append(new UrclInstruction(Operation.HLT));
+            var wordSize = configuration.WordSize;
+            instructions = instructions.Select(inst => 
+            {
+                if (inst.Operation == Operation.BITS)
+                {
+                    if (inst.A > 0 && inst.A <= configuration.WordSize)
+                    {
+                        wordSize = (ushort)inst.A;
+                    }
+                }
+
+                return inst;
+            }).Where(inst => inst.Operation != Operation.BITS).Append(new UrclInstruction(Operation.HLT));
 
             var machine = new UrclMachine(1, configuration.Registers, configuration.MaxStack, configuration.AvailableMemory, configuration.AvailableROM, configuration.ExecuteOnROM, configuration.WordBitMask, allowConsole ? new ConsoleIO() : null);
 

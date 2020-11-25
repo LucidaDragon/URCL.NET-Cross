@@ -32,7 +32,7 @@ namespace URCL.NET
         /// The size of memory words, in units of bits.
         /// </summary>
         [Config("The size of memory words, in units of bits.")]
-        public int WordSize { get; set; } = 8;
+        public ushort WordSize { get; set; } = 32;
 
         /// <summary>
         /// The bit mask defined by <see cref="WordSize"/>.

@@ -90,6 +90,8 @@
 
         [Accepts(OperandType.Immediate)]
         MINRAM,
+        [Accepts(OperandType.Immediate)]
+        BITS,
 
         [Accepts()]
         BENCHMARK,

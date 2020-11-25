@@ -397,7 +397,7 @@ namespace URCL.NET.VM
                         if (inst.Exists(Operand.A))
                         {
                             ValueStack.Push(ResolveValue(inst[Operand.A]));
-                            if ((ulong)ValueStack.Count > MaxStack) throw new InvalidOperationException(this, "Stack overflow occured.");
+                            if ((ulong)ValueStack.Count > MaxStack) throw new InvalidOperationException(this, InvalidOperationException.StackOverflow);
                         }
                         else
                         {
@@ -492,7 +492,7 @@ namespace URCL.NET.VM
                         if (inst.Exists(Operand.A))
                         {
                             CallStack.Push(InstructionPointer);
-                            if ((ulong)CallStack.Count > MaxStack) throw new InvalidOperationException(this, "Stack overflow occured.");
+                            if ((ulong)CallStack.Count > MaxStack) throw new InvalidOperationException(this, InvalidOperationException.StackOverflow);
                             InstructionPointer = ResolveValue(inst[Operand.A]);
                         }
                         else
@@ -754,6 +754,7 @@ namespace URCL.NET.VM
             public const string NoMemory = "Core does not have memory to operate on.";
             public const string NotEnoughMemory = "Core tried to access memory out of range.";
             public const string NotEnoughRegisters = "Core tried to access more registers than it has.";
+            public const string StackOverflow = "Stack overflow occured.";
             public const string InvalidData = "The type of data in memory is not supported.";
             public const string InvalidFetchData = "The data at the fetched address is not a valid instruction.";
             public const string InvalidInstruction = "The executed instruction was invalid.";
