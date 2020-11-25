@@ -39,14 +39,21 @@ namespace UrclBot
                         var m = job.Item1;
                         var attach = job.Item2;
 
-                        using var fetch = new WebClient();
-                        var content = await fetch.DownloadStringTaskAsync(attach.Url);
+                        try
+                        {
+                            using var fetch = new WebClient();
+                            var content = await fetch.DownloadStringTaskAsync(attach.Url);
 
-                        var buffer = new List<string>();
+                            var buffer = new List<string>();
 
-                        await Urcl.SubmitJob(content, buffer.Add);
+                            await Urcl.SubmitJob(content, buffer.Add);
 
-                        Reply(m, $"Result of \"{attach.Filename}\":{Environment.NewLine}{string.Join(Environment.NewLine, buffer)}");
+                            Reply(m, $"Result of \"{attach.Filename}\":{Environment.NewLine}{string.Join(Environment.NewLine, buffer)}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Reply(m, $"API Error: {ex.Message}");
+                        }
                     }
                 }
             });
@@ -90,10 +97,15 @@ namespace UrclBot
                 return Task.CompletedTask;
             };
 
-            Client.Disconnected += async (e) =>
+            Client.Disconnected += (e) =>
             {
-                await Client.LoginAsync(TokenType.Bot, Token);
-                await Client.StartAsync();
+                new Thread(async () =>
+                {
+                    await Client.LoginAsync(TokenType.Bot, Token);
+                    await Client.StartAsync();
+                }).Start();
+
+                return Task.CompletedTask;
             };
         }
 
