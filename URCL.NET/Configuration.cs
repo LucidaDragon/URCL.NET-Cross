@@ -88,6 +88,12 @@ namespace URCL.NET
         public string Modules { get; set; }
 
         /// <summary>
+        /// Open a port to allow other applications control over the compiler.
+        /// </summary>
+        [Config("Open a port to allow other applications control over the compiler.")]
+        public ushort ApiPort { get; set; }
+
+        /// <summary>
         /// Show configuration help.
         /// </summary>
         [Config("Show configuration help.")]

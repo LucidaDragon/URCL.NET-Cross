@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -15,11 +14,13 @@ namespace URCL.NET
         private const string NameFile = "NameFile";
         private const string HandleFile = "HandleFile";
         private const string HandleEmit = "HandleEmit";
+        private const string HandleConfiguration = "HandleConfiguration";
         private const string UnknownType = "unknown";
 
         private readonly Dictionary<string, string> FileNames = new Dictionary<string, string>();
         private readonly Dictionary<string, MethodInfo> FileHandlers = new Dictionary<string, MethodInfo>();
         private readonly Dictionary<string, MethodInfo> Emitters = new Dictionary<string, MethodInfo>();
+        private readonly List<MethodInfo> Configurations = new List<MethodInfo>();
 
         public void AddFileType(string ext, string name)
         {
@@ -112,10 +113,25 @@ namespace URCL.NET
                                 {
                                     Emitters[method.Name.Substring(HandleEmit.Length).ToLower()] = method;
                                 }
+                                else if (method.Name == HandleConfiguration &&
+                                    method.IsStatic &&
+                                    parameters.Length == 1 &&
+                                    parameters[0].ParameterType == typeof(Configuration))
+                                {
+                                    Configurations.Add(method);
+                                }
                             }
                         }
                     }
                 }
+            }
+        }
+
+        public void RunConfigurations(Configuration configuration)
+        {
+            foreach (var config in Configurations)
+            {
+                config.Invoke(null, new object[] { configuration });
             }
         }
 
