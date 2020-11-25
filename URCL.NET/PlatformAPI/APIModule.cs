@@ -54,22 +54,29 @@ namespace URCL.NET.PlatformAPI
                         try
                         {
                             instructions = Parser.Parse(buffer);
+
+                            EmulatorHost.Emulator(configuration, instructions, writer.Write, () => { }, false);
                         }
                         catch (ParserError ex)
                         {
                             writer.Write(ex.Message);
+                            writer.Write(string.Empty);
                             stream.Flush();
                             continue;
                         }
-
-                        EmulatorHost.Emulator(configuration, instructions, writer.Write, () => { }, false);
+                        catch (Exception ex)
+                        {
+                            writer.Write(ex.Message);
+                            writer.Write(string.Empty);
+                            continue;
+                        }
 
                         writer.Write(string.Empty);
                         stream.Flush();
                     }
                     catch (Exception ex)
                     {
-                        Console.Error.WriteLine($"API: {ex.Message}");
+                        Console.Error.WriteLine($"API: {ex}");
                     }
                 }
             }
