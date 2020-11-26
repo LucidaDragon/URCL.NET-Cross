@@ -143,6 +143,12 @@ namespace URCL.NET.PlatformSpeedAsm
                         });
                     }
                     break;
+                case global::SpeedAsm.Operation.Push:
+                    result.Operation = Operation.PSH;
+                    break;
+                case global::SpeedAsm.Operation.Pop:
+                    result.Operation = Operation.POP;
+                    break;
                 case global::SpeedAsm.Operation.Label:
                     result.Operation = Operation.COMPILER_MARKLABEL;
                     result.AType = OperandType.Label;
