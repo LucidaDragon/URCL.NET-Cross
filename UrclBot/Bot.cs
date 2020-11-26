@@ -14,6 +14,8 @@ namespace UrclBot
 {
     public class Bot : IDisposable
     {
+        public ulong? Owner { get; }
+
         private readonly UrclInterface Urcl;
         private readonly DiscordSocketClient Client;
         private readonly string Token;
@@ -23,10 +25,11 @@ namespace UrclBot
         private readonly AutoResetEvent Sleep = new AutoResetEvent(false);
         private bool Quit = false;
 
-        public Bot(UrclInterface urcl, Action<string> output, string token)
+        public Bot(UrclInterface urcl, Action<string> output, string token, ulong? owner = null)
         {
             Urcl = urcl;
             Token = token;
+            Owner = owner;
 
             Worker = new Thread(async () =>
             {
