@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using URCL.NET.Compiler;
 
 namespace URCL.NET.PlatformSpeedAsm
 {
@@ -13,8 +14,7 @@ namespace URCL.NET.PlatformSpeedAsm
         {
             if (!global::SpeedAsm.Compiler.Build(Wrapper, src, out int line, out string error))
             {
-                Console.WriteLine($"Compile Error: Ln {line + 1}, {error}");
-                Environment.Exit(NameFileSped.GetHashCode());
+                throw new ParserError($"Compile Error: Ln {line + 1}, {error}");
             }
 
             while (Wrapper.Instructions.Count > 0)
