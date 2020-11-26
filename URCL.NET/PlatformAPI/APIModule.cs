@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using URCL.NET.Compiler;
 using URCL.NET.VM;
 
@@ -74,14 +75,21 @@ namespace URCL.NET.PlatformAPI
                         }
                         catch (ParserError ex)
                         {
-                            writer.Write($"<P> {ex.Message}");
+                            writer.Write(ex.Message);
+                            writer.Write(string.Empty);
+                            stream.Flush();
+                            continue;
+                        }
+                        catch (TargetInvocationException ex)
+                        {
+                            writer.Write(ex.InnerException.Message);
                             writer.Write(string.Empty);
                             stream.Flush();
                             continue;
                         }
                         catch (Exception ex)
                         {
-                            writer.Write($"<C> {ex.Message}");
+                            writer.Write(ex.Message);
                             writer.Write(string.Empty);
                             continue;
                         }
