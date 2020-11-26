@@ -96,7 +96,7 @@ namespace URCL.NET.VM
         private static void RenderCoreState(ulong index, UrclMachine.Core core, Action<string> output)
         {
             output($"Core {index}:");
-            output($"\tInstruction Pointer: 0x{core.InstructionPointer.ToString("X").PadLeft(8, '0')}, Last Value: {core.Flags:X}, Halted: {(core.Halted ? "Yes" : "No")}");
+            output($"\tInstruction Pointer: 0x{core.InstructionPointer.ToString("X").PadLeft(8, '0')}, Last Value: {(uint)core.Flags:X}, Halted: {(core.Halted ? "Yes" : "No")}");
 
             output("\tRegisters:");
             for (ulong i = 0; i < (ulong)core.Registers.LongLength; i++)
