@@ -20,7 +20,7 @@ namespace URCL.NET.VM
                 }
 
                 return inst;
-            }).Where(inst => inst.Operation != Operation.BITS).Append(new UrclInstruction(Operation.HLT));
+            }).Where(inst => inst.Operation != Operation.BITS).Append(new UrclInstruction(Operation.HLT)).ToArray();
 
             var machine = new UrclMachine(1, configuration.Registers, configuration.MaxStack, configuration.AvailableMemory, configuration.AvailableROM, configuration.ExecuteOnROM, Configuration.GetBitMask(wordSize), allowConsole ? new ConsoleIO() : null);
 

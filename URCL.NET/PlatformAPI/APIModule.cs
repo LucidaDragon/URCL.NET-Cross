@@ -74,14 +74,14 @@ namespace URCL.NET.PlatformAPI
                         }
                         catch (ParserError ex)
                         {
-                            writer.Write(ex.Message);
+                            writer.Write($"<P> {ex.Message}");
                             writer.Write(string.Empty);
                             stream.Flush();
                             continue;
                         }
                         catch (Exception ex)
                         {
-                            writer.Write(ex.Message);
+                            writer.Write($"<C> {ex.Message}");
                             writer.Write(string.Empty);
                             continue;
                         }
