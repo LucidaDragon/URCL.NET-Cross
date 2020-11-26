@@ -135,6 +135,11 @@ namespace URCL.NET
             }
         }
 
+        public bool ExecuteFileHandler(string ext, IEnumerable<string> lines, Action<string> output)
+        {
+            return ExecuteFileHandler(ext, new MemoryStream(Encoding.UTF8.GetBytes(string.Join(Environment.NewLine, lines))), output);
+        }
+
         public bool ExecuteFileHandler(string ext, Stream input, Action<string> output)
         {
             if (FileHandlers.TryGetValue(ext.ToLower(), out MethodInfo method))

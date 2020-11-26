@@ -14,8 +14,10 @@ namespace URCL.NET.PlatformAPI
         {
             if (configuration.ApiPort > 0)
             {
+                var modules = new ModuleLoader();
                 var tcp = new TcpListener(new IPEndPoint(IPAddress.Loopback, configuration.ApiPort));
 
+                modules.Load(configuration);
                 tcp.Start();
 
                 while (true)
@@ -36,24 +38,37 @@ namespace URCL.NET.PlatformAPI
 
                         writer.Write(string.Empty);
 
+                        var lang = reader.ReadString().ToLower();
+
                         stream.Flush();
 
                         var lineCount = ulong.Parse(reader.ReadString());
 
                         if (lineCount == 0) continue;
 
-                        var buffer = new List<string>();
+                        var lines = new List<string>();
 
                         for (ulong i = 0; i < lineCount; i++)
                         {
-                            buffer.Add(reader.ReadString());
+                            lines.Add(reader.ReadString());
                         }
 
                         IEnumerable<UrclInstruction> instructions;
 
                         try
                         {
-                            instructions = Parser.Parse(buffer);
+                            if (lang != "urcl")
+                            {
+                                var source = lines;
+                                lines = new List<string>();
+
+                                if (!modules.ExecuteFileHandler(lang, source, lines.Add))
+                                {
+                                    throw new ParserError($"Format \"{lang}\" is not supported.");
+                                }
+                            }
+
+                            instructions = Parser.Parse(lines);
 
                             EmulatorHost.Emulator(configuration, instructions, writer.Write, () => { }, false);
                         }

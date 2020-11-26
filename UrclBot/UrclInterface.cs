@@ -23,7 +23,7 @@ namespace UrclBot
             Port = port;
         }
 
-        public async Task SubmitJob(string job, Action<string> output)
+        public async Task SubmitJob(string job, string lang, Action<string> output)
         {
             using var client = new TcpClient();
 
@@ -56,6 +56,8 @@ namespace UrclBot
 
                 return;
             }
+
+            writer.Write(lang);
 
             writer.Write(lines.Length.ToString());
 
