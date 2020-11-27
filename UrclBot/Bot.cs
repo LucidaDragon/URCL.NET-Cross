@@ -76,6 +76,7 @@ namespace UrclBot
             Client.Ready += () =>
             {
                 WaitForConnect.Set();
+                Client.SetGameAsync("Imagine downloading an emulator.", null, ActivityType.CustomStatus);
                 return Task.CompletedTask;
             };
 
@@ -135,7 +136,6 @@ namespace UrclBot
                 {
                     await Client.LoginAsync(TokenType.Bot, Token);
                     await Client.StartAsync();
-                    await Client.SetGameAsync("Imagine download an emulator.", null, ActivityType.CustomStatus);
                 }).Start();
 
                 return Task.CompletedTask;
@@ -146,7 +146,6 @@ namespace UrclBot
         {
             await Client.LoginAsync(TokenType.Bot, Token);
             await Client.StartAsync();
-            await Client.SetGameAsync("Imagine download an emulator.", null, ActivityType.CustomStatus);
             Worker.Start();
         }
 
