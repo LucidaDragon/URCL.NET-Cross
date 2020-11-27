@@ -108,6 +108,7 @@ namespace URCL.NET.Compiler
                     var allowedTypes = GetOperationOperands(op);
                     var values = new object[args.Length - 1];
                     var valueTypes = new OperandType[values.Length];
+                    ulong v;
 
                     if (values.Length != allowedTypes.Length) throw new ParserError($"Expected {allowedTypes.Length} operands but found {values.Length} instead.");
 
@@ -129,7 +130,7 @@ namespace URCL.NET.Compiler
                         }
                         else if (arg.StartsWith("R") || arg.StartsWith('$'))
                         {
-                            if (ulong.TryParse(arg[1..], out ulong v))
+                            if (ulong.TryParse(arg[1..], out v))
                             {
                                 values[i] = v;
                                 valueTypes[i] = OperandType.Register;
@@ -139,7 +140,12 @@ namespace URCL.NET.Compiler
                                 throw new ParserError($"Invalid register \"{arg}\".");
                             }
                         }
-                        else if (arg.StartsWith("0x") && ulong.TryParse(arg[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong v))
+                        else if (arg.StartsWith("0x") && ulong.TryParse(arg[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out v))
+                        {
+                            values[i] = v;
+                            valueTypes[i] = OperandType.Immediate;
+                        }
+                        else if (arg.StartsWith("0b") && TryParseBinary(arg[2..], out v))
                         {
                             values[i] = v;
                             valueTypes[i] = OperandType.Immediate;
@@ -188,6 +194,29 @@ namespace URCL.NET.Compiler
             if (attrib is null) return new OperandType[0];
 
             return attrib.Types;
+        }
+
+        private static bool TryParseBinary(string str, out ulong result)
+        {
+            result = 0;
+
+            if (str.Length > 64) return false;
+
+            for (int i = 0; i < str.Length; i++)
+            {
+                result <<= 1;
+
+                if (str[i] == '1')
+                {
+                    result = 1;
+                }
+                else if (str[i] != '0')
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
