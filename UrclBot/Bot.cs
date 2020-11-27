@@ -4,7 +4,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -136,6 +135,7 @@ namespace UrclBot
                 {
                     await Client.LoginAsync(TokenType.Bot, Token);
                     await Client.StartAsync();
+                    await Client.SetGameAsync("Imagine download an emulator.", null, ActivityType.CustomStatus);
                 }).Start();
 
                 return Task.CompletedTask;
@@ -146,6 +146,7 @@ namespace UrclBot
         {
             await Client.LoginAsync(TokenType.Bot, Token);
             await Client.StartAsync();
+            await Client.SetGameAsync("Imagine download an emulator.", null, ActivityType.CustomStatus);
             Worker.Start();
         }
 
