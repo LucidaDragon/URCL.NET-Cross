@@ -208,7 +208,7 @@ namespace URCL.NET.Compiler
 
                 if (str[i] == '1')
                 {
-                    result = 1;
+                    result |= 1;
                 }
                 else if (str[i] != '0')
                 {
