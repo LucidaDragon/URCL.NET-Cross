@@ -495,6 +495,26 @@ namespace URCL.NET.VM
                             Invalid();
                         }
                         break;
+                    case Operation.BEV:
+                        if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
+                        {
+                            if (ResolveValue(inst[Operand.B]) & 1 == 0) InstructionPointer = ResolveValue(inst[Operand.A]) -1;
+                        }
+                        else
+                        {
+                            Invalid();
+                        }
+                        break;
+                    case Operation.BOD:
+                        if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
+                        {
+                            if (ResolveValue(inst[Operand.B]) & 1 == 1) InstructionPointer = ResolveValue(inst[Operand.A]) -1;
+                        }
+                        else
+                        {
+                            Invalid();
+                        }
+                        break;
                     case Operation.CAL:
                         if (inst.Exists(Operand.A))
                         {
