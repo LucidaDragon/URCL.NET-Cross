@@ -215,6 +215,15 @@ namespace URCL.NET.VM
                             Invalid();
                         }
                         break;
+                    case Operation.CMP:
+                        if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
+                        {
+                            Flags = (ResolveValue(inst[Operand.A]) - ResolveValue(inst[Operand.B])));
+                        }
+                        else
+                        {
+                            Invalid();
+                        }
                     case Operation.AND:
                         if (inst.IsRegister(Operand.A) && inst.Exists(Operand.B) && inst.Exists(Operand.C))
                         {
