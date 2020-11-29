@@ -86,11 +86,18 @@ namespace URCL.NET.PlatformAPI
                             {
                                 var source = lines;
                                 lines = new List<string>();
+                                bool hasError = false;
 
-                                if (!modules.ExecuteFileHandler(lang, source, lines.Add))
+                                if (!modules.ExecuteFileHandler(lang, source, lines.Add, (msg) =>
+                                {
+                                    hasError = true;
+                                    writer.Write(msg);
+                                }))
                                 {
                                     throw new ParserError($"Format \"{lang}\" is not supported.");
                                 }
+
+                                if (hasError) throw new ParserError("The source was not compiled successfully.");
                             }
 
                             var optimizer = new UrclOptimizer

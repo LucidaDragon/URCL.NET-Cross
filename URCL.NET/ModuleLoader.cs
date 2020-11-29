@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LuC;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -135,67 +136,82 @@ namespace URCL.NET
             }
         }
 
-        public bool ExecuteFileHandler(string ext, IEnumerable<string> lines, Action<string> output)
+        public bool ExecuteFileHandler(string ext, IEnumerable<string> lines, Action<string> output, Action<string> error)
         {
-            return ExecuteFileHandler(ext, new MemoryStream(Encoding.UTF8.GetBytes(string.Join(Environment.NewLine, lines))), output);
+            return ExecuteFileHandler(ext, new MemoryStream(Encoding.UTF8.GetBytes(string.Join(Environment.NewLine, lines))), output, error);
         }
 
-        public bool ExecuteFileHandler(string ext, Stream input, Action<string> output)
+        public bool ExecuteFileHandler(string ext, Stream input, Action<string> output, Action<string> error)
         {
-            if (FileHandlers.TryGetValue(ext.ToLower(), out MethodInfo method))
+            try
             {
-                var paramters = method.GetParameters();
-                var target = method.DeclaringType.GetConstructor(Type.EmptyTypes).Invoke(null);
-
-                object emit = output;
-
-                if (paramters[0].ParameterType == typeof(Action<UrclInstruction>))
+                try
                 {
-                    emit = new Action<UrclInstruction>((inst) =>
+                    if (FileHandlers.TryGetValue(ext.ToLower(), out MethodInfo method))
                     {
-                        output(inst.ToString());
-                    });
-                }
+                        var paramters = method.GetParameters();
+                        var target = method.DeclaringType.GetConstructor(Type.EmptyTypes).Invoke(null);
 
-                if (paramters[1].ParameterType == typeof(string))
-                {
-                    using var reader = new StreamReader(input, Encoding.UTF8, leaveOpen: true);
+                        object emit = output;
 
-                    while (!reader.EndOfStream)
+                        if (paramters[0].ParameterType == typeof(Action<UrclInstruction>))
+                        {
+                            emit = new Action<UrclInstruction>((inst) =>
+                            {
+                                output(inst.ToString());
+                            });
+                        }
+
+                        if (paramters[1].ParameterType == typeof(string))
+                        {
+                            using var reader = new StreamReader(input, Encoding.UTF8, leaveOpen: true);
+
+                            while (!reader.EndOfStream)
+                            {
+                                string str = reader.ReadLine();
+
+                                if (str is null) break;
+
+                                method.Invoke(target, new object[] { emit, str });
+                            }
+                        }
+                        else if (paramters[1].ParameterType == typeof(IEnumerable<string>))
+                        {
+                            using var reader = new StreamReader(input, Encoding.UTF8, leaveOpen: true);
+
+                            method.Invoke(target, new object[] { emit, ReadStreamLines(reader) });
+                        }
+                        else if (paramters[1].ParameterType == typeof(byte))
+                        {
+                            int value = input.ReadByte();
+
+                            while (value >= 0)
+                            {
+                                method.Invoke(target, new object[] { emit, (byte)value });
+                                value = input.ReadByte();
+                            }
+                        }
+                        else if (paramters[1].ParameterType == typeof(IEnumerable<byte>))
+                        {
+                            method.Invoke(target, new object[] { emit, ReadStreamBytes(input) });
+                        }
+
+                        return true;
+                    }
+                    else
                     {
-                        string str = reader.ReadLine();
-
-                        if (str is null) break;
-
-                        method.Invoke(target, new object[] { emit, str });
+                        return false;
                     }
                 }
-                else if (paramters[1].ParameterType == typeof(IEnumerable<string>))
+                catch (TargetInvocationException ex)
                 {
-                    using var reader = new StreamReader(input, Encoding.UTF8, leaveOpen: true);
-
-                    method.Invoke(target, new object[] { emit, ReadStreamLines(reader) });
+                    throw ex.InnerException;
                 }
-                else if (paramters[1].ParameterType == typeof(byte))
-                {
-                    int value = input.ReadByte();
-
-                    while (value >= 0)
-                    {
-                        method.Invoke(target, new object[] { emit, (byte)value });
-                        value = input.ReadByte();
-                    }
-                }
-                else if (paramters[1].ParameterType == typeof(IEnumerable<byte>))
-                {
-                    method.Invoke(target, new object[] { emit, ReadStreamBytes(input) });
-                }
-
-                return true;
             }
-            else
+            catch (Exception ex)
             {
-                return false;
+                error(ex.Message);
+                return true;
             }
         }
 
