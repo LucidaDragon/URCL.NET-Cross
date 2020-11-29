@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -38,10 +39,33 @@ namespace URCL.NET.PlatformAPI
                         }
 
                         writer.Write(string.Empty);
+                        stream.Flush();
 
                         var lang = reader.ReadString().ToLower();
+                        var outType = reader.ReadString().ToLower();
+                        var selectedTier = reader.ReadString().ToLower();
+                        OperationType tier;
 
-                        stream.Flush();
+                        switch (selectedTier)
+                        {
+                            case "core":
+                                tier = OperationType.Pragma;
+                                break;
+                            case "basic":
+                                tier = OperationType.Basic;
+                                break;
+                            case "complex":
+                                tier = OperationType.Complex;
+                                break;
+                            case "any":
+                                tier = OperationType.CustomPragma;
+                                break;
+                            default:
+                                writer.Write($"Invalid platform target \"{selectedTier}\"");
+                                writer.Write(string.Empty);
+                                stream.Flush();
+                                continue;
+                        }
 
                         var lineCount = ulong.Parse(reader.ReadString());
 
@@ -69,9 +93,31 @@ namespace URCL.NET.PlatformAPI
                                 }
                             }
 
-                            instructions = Parser.Parse(lines);
+                            var optimizer = new UrclOptimizer
+                            {
+                                Compatibility = tier
+                            };
 
-                            EmulatorHost.Emulator(configuration, instructions, writer.Write, () => { }, false);
+                            instructions = optimizer.Optimize(Parser.Parse(lines).ToArray());
+
+                            if (outType == "emulate")
+                            {
+                                EmulatorHost.Emulator(configuration, instructions, writer.Write, () => { }, false);
+                            }
+                            else if (outType == "dump")
+                            {
+                                foreach (var inst in instructions)
+                                {
+                                    writer.Write(inst.ToString());
+                                }
+                                writer.Write(string.Empty);
+                                stream.Flush();
+                                continue;
+                            }
+                            else
+                            {
+                                throw new ParserError($"Invalid output type \"{outType}\".");
+                            }
                         }
                         catch (ParserError ex)
                         {

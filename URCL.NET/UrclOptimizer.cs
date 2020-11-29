@@ -95,19 +95,32 @@ namespace URCL.NET
             }
 
             ulong temporaryRegister = 1;
+            var inUse = new List<ulong>();
 
-            for (int i = 0; i < insts.Count; i++)
+            foreach (var inst in insts)
             {
-                var inst = insts[i];
-
-                if (inst.AType == OperandType.Register && inst.A == temporaryRegister) temporaryRegister++;
-                if (inst.BType == OperandType.Register && inst.B == temporaryRegister) temporaryRegister++;
-                if (inst.CType == OperandType.Register && inst.C == temporaryRegister) temporaryRegister++;
+                if (inst.AType == OperandType.Register && !inUse.Contains(inst.A)) inUse.Add(inst.A);
+                if (inst.BType == OperandType.Register && !inUse.Contains(inst.B)) inUse.Add(inst.B);
+                if (inst.CType == OperandType.Register && !inUse.Contains(inst.C)) inUse.Add(inst.C);
             }
 
-            for (int i = 0; i < insts.Count; i++)
-            {
+            while (inUse.Contains(temporaryRegister) && temporaryRegister < ulong.MaxValue) temporaryRegister++;
 
+            List<UrclInstruction> result;
+            bool changed = true;
+
+            while (changed)
+            {
+                result = new List<UrclInstruction>(insts.Count);
+                changed = false;
+
+                foreach (var inst in insts)
+                {
+                    result.AddRange(Conversion.Convert(inst, Compatibility, temporaryRegister, out bool hasChanged));
+                    changed |= hasChanged;
+                }
+
+                insts = result;
             }
 
             return insts.ToArray();
@@ -220,7 +233,7 @@ namespace URCL.NET
                                 }),
                                 new UrclInstruction(Operation.COMPILER_COMMENT, new[]
                                 {
-                                    $"Failed to convert operation {instruction.Operation} to {maximumTier.ToString().ToLower()}"
+                                    $"Failed to convert operation {instruction.Operation} to {maximumTier.ToString().ToLower()} or lower."
                                 })
                             };
                         }

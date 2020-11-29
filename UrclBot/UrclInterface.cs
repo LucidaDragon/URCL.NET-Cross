@@ -25,7 +25,7 @@ namespace UrclBot
             Port = port;
         }
 
-        public async Task SubmitJob(string job, string lang, Action<string> output)
+        public async Task SubmitJob(string job, string lang, string outputType, string tier, Action<string> output)
         {
             if (Process is null || Process.HasExited)
             {
@@ -65,6 +65,8 @@ namespace UrclBot
             }
 
             writer.Write(lang);
+            writer.Write(outputType);
+            writer.Write(tier);
 
             writer.Write(lines.Length.ToString());
 

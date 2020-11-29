@@ -11,6 +11,8 @@ namespace UrclBot
         public SocketMessage Source { get; }
         public string Name { get; }
         public string Language { get; }
+        public string OutputType { get; }
+        public string Tier { get; }
 
         public async Task<string> GetContent()
         {
@@ -28,10 +30,12 @@ namespace UrclBot
         private readonly string FixedContent;
         private readonly Attachment Attachment;
 
-        public BotTask(SocketMessage source, string language, string content)
+        public BotTask(SocketMessage source, string language, string outputType, string tier, string content)
         {
             Source = source;
             Language = language;
+            OutputType = outputType;
+            Tier = tier;
             FixedContent = content;
             Name = $"{language} Task";
         }

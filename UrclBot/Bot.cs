@@ -53,7 +53,7 @@ namespace UrclBot
                         {
                             var buffer = new List<string>();
 
-                            await Urcl.SubmitJob(await job.GetContent(), job.Language, buffer.Add);
+                            await Urcl.SubmitJob(await job.GetContent(), job.Language, job.OutputType, job.Tier, buffer.Add);
 
                             Reply(job.Source, $"Result of \"{job.Name}\":{Environment.NewLine}{string.Join(Environment.NewLine, buffer)}");
                         }
@@ -110,13 +110,15 @@ namespace UrclBot
 
                         if (!foundFile)
                         {
-                            var match = Regex.Match(m.Content, @"([\w\d]+)?\s*(```((.|\n)*)```)");
+                            var match = Regex.Match(m.Content, @"([\w]+)?\s*([\w]+)?\s*([\w]+)?\s*(```((.|\n)*)```)");
 
                             if (match.Success)
                             {
                                 var lang = match.Groups[1].Success ? match.Groups[1].Value : "urcl";
+                                var outputType = match.Groups[2].Success ? match.Groups[2].Value : "emulate";
+                                var tier = match.Groups[3].Success ? match.Groups[3].Value : "any";
 
-                                Jobs.Enqueue(new BotTask(m, lang, match.Groups[3].Value));
+                                Jobs.Enqueue(new BotTask(m, lang, outputType, tier, match.Groups[5].Value));
                                 Sleep.Set();
                             }
                             else
