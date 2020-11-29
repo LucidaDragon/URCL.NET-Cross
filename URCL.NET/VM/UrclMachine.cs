@@ -30,12 +30,12 @@ namespace URCL.NET.VM
         public ulong CurrentCore { get; set; } = 0;
         public ulong Ticks { get; set; } = 0;
 
-        public UrclMachine(ulong cores, ulong registers, ulong ram, ulong rom, bool coresExecOnROM = false, ulong bitmask = uint.MaxValue, IO ioBus = null)
+        public UrclMachine(ulong cores, ulong registers, ulong maxStack, ulong ram, ulong rom, bool coresExecOnROM = false, ulong bitmask = uint.MaxValue, IO ioBus = null)
         {
             Cores = new Core[cores];
             for (ulong i = 0; i < cores; i++)
             {
-                Cores[i] = new Core(this, coresExecOnROM, registers);
+                Cores[i] = new Core(this, coresExecOnROM, registers, maxStack);
             }
 
             RAM = new object[ram];
@@ -58,9 +58,11 @@ namespace URCL.NET.VM
                 {
                     RamLabels[inst.ALabel] = address;
                 }
-
-                RAM[address] = item;
-                address++;
+                else
+                {
+                    RAM[address] = item;
+                    address++;
+                }
             }
 
             return address;
@@ -78,9 +80,11 @@ namespace URCL.NET.VM
                 {
                     RomLabels[inst.ALabel] = address;
                 }
-
-                ROM[address] = item;
-                address++;
+                else
+                {
+                    ROM[address] = item;
+                    address++;
+                }
             }
 
             return address;
@@ -113,6 +117,7 @@ namespace URCL.NET.VM
             public UrclMachine Host { get; set; }
             public Stack<ulong> ValueStack { get; set; } = new Stack<ulong>();
             public Stack<ulong> CallStack { get; set; } = new Stack<ulong>();
+            public ulong MaxStack { get; set; }
             public ulong InstructionPointer { get; set; } = 0;
             public ulong Ticks { get; set; } = 0;
             public bool Halted { get; set; } = false;
@@ -120,11 +125,12 @@ namespace URCL.NET.VM
             public ulong[] Registers { get; set; }
             public ulong Flags { get; set; } = 0;
 
-            public Core(UrclMachine host, bool executeFromROM, ulong registers)
+            public Core(UrclMachine host, bool executeFromROM, ulong registers, ulong maxStack)
             {
                 Host = host;
                 ExecuteFromROM = executeFromROM;
                 Registers = new ulong[registers];
+                MaxStack = maxStack;
             }
 
             public bool Clock()
@@ -395,6 +401,7 @@ namespace URCL.NET.VM
                         if (inst.Exists(Operand.A))
                         {
                             ValueStack.Push(ResolveValue(inst[Operand.A]));
+                            if ((ulong)ValueStack.Count > MaxStack) throw new InvalidOperationException(this, InvalidOperationException.StackOverflow);
                         }
                         else
                         {
@@ -489,6 +496,7 @@ namespace URCL.NET.VM
                         if (inst.Exists(Operand.A))
                         {
                             CallStack.Push(InstructionPointer);
+                            if ((ulong)CallStack.Count > MaxStack) throw new InvalidOperationException(this, InvalidOperationException.StackOverflow);
                             InstructionPointer = ResolveValue(inst[Operand.A]);
                         }
                         else
@@ -512,6 +520,8 @@ namespace URCL.NET.VM
                     case Operation.COMPILER_CREATELABEL:
                     case Operation.COMPILER_MARKLABEL:
                     case Operation.COMPILER_MAXREG:
+                    case Operation.COMPILER_COMMENT:
+                    case Operation.COMPILER_PRAGMA:
                         break;
                     default:
                         Invalid();
@@ -750,6 +760,7 @@ namespace URCL.NET.VM
             public const string NoMemory = "Core does not have memory to operate on.";
             public const string NotEnoughMemory = "Core tried to access memory out of range.";
             public const string NotEnoughRegisters = "Core tried to access more registers than it has.";
+            public const string StackOverflow = "Stack overflow occured.";
             public const string InvalidData = "The type of data in memory is not supported.";
             public const string InvalidFetchData = "The data at the fetched address is not a valid instruction.";
             public const string InvalidInstruction = "The executed instruction was invalid.";

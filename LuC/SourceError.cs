@@ -11,7 +11,7 @@ namespace LuC
         public const string UnexpectedEnd = "Unexpected end of statement.";
         public const string UnknownStatement = "Could not compile statement.";
         public const string MissingAttribute = "Statement is missing a required attribute.";
-        public const string MissingBlock = "Statement requires a block, but no block was found.";
+        public const string MissingBlock = "Statement requires a token, but no token was found.";
         public const string EmptyExpression = "Expression is empty.";
         public const string InvalidExpression = "Expression is invalid.";
         public const string InvalidLiteral = "Literal is invalid.";

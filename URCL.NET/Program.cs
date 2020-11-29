@@ -80,7 +80,7 @@ namespace URCL.NET
                         {
                             var lines = new List<string>();
 
-                            if (!moduleLoader.ExecuteFileHandler(inExt, input, lines.Add))
+                            if (!moduleLoader.ExecuteFileHandler(inExt, input, lines.Add, Console.WriteLine))
                             {
                                 Console.WriteLine($"File \"{file}\" is not supported.");
                                 Environment.Exit(2);
@@ -93,7 +93,7 @@ namespace URCL.NET
                         {
                             using var writer = new StreamWriter(new FileStream(configuration.Output, FileMode.Create, FileAccess.ReadWrite));
 
-                            if (!moduleLoader.ExecuteFileHandler(inExt, input, writer.WriteLine))
+                            if (!moduleLoader.ExecuteFileHandler(inExt, input, writer.WriteLine, Console.WriteLine))
                             {
                                 Console.WriteLine($"File \"{file}\" is not supported.");
                                 Environment.Exit(2);

@@ -37,6 +37,10 @@ namespace SpeedAsm
         BXor,
         [Operation("!", true, true)]
         BNot,
+        [Operation("push", true)]
+        Push,
+        [Operation("pop", true)]
+        Pop,
         [Operation(":", true, destLabel: true)]
         Label,
         [Operation("goto", true, destLabel: true)]

@@ -10,7 +10,13 @@ namespace UrclBot
         {
             if (File.Exists("URCL.NET.exe") && File.Exists("token.txt"))
             {
-                Console.WriteLine("Press any key to abort...");
+                ulong? owner = null;
+
+                if (File.Exists("owner.txt") && ulong.TryParse(File.ReadAllText("owner.txt"), out ulong v))
+                {
+                    owner = v;
+                }
+
                 var urcl = new UrclInterface("URCL.NET.exe", 11113);
                 urcl.Configuration.Add("Emulate");
                 urcl.Configuration.Add("DisableBreak");

@@ -32,7 +32,7 @@ namespace URCL.NET
         /// The size of memory words, in units of bits.
         /// </summary>
         [Config("The size of memory words, in units of bits.")]
-        public int WordSize { get; set; } = 8;
+        public ushort WordSize { get; set; } = 32;
 
         /// <summary>
         /// The bit mask defined by <see cref="WordSize"/>.
@@ -56,6 +56,11 @@ namespace URCL.NET
         /// </summary>
         [Config("The maximum amount of time to emulate for, in milliseconds.")]
         public ulong MaxTime { get; set; } = 1000;
+
+        /// <summary>
+        /// The maximum number of items on the emulator stack.
+        /// </summary>
+        public ulong MaxStack { get; set; } = 1024;
 
         /// <summary>
         /// Disable breakpoints while emulating.

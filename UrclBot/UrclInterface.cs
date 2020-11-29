@@ -14,17 +14,24 @@ namespace UrclBot
     {
         public List<string> Configuration { get; set; } = new List<string>();
 
-        private readonly Process Process;
+        private readonly string Path;
         private readonly ushort Port;
+
+        private Process Process;
 
         public UrclInterface(string path, ushort port)
         {
-            Process = Process.Start(path, $"\"ApiPort {port}\" \"\"");
+            Path = path;
             Port = port;
         }
 
-        public async Task SubmitJob(string job, Action<string> output)
+        public async Task SubmitJob(string job, string lang, string outputType, string tier, Action<string> output)
         {
+            if (Process is null || Process.HasExited)
+            {
+                Process = Process.Start(Path, $"\"ApiPort {Port}\" \"\"");
+            }
+
             using var client = new TcpClient();
 
             var lines = job.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(line => line.Trim()).ToArray();
@@ -56,6 +63,10 @@ namespace UrclBot
 
                 return;
             }
+
+            writer.Write(lang);
+            writer.Write(outputType);
+            writer.Write(tier);
 
             writer.Write(lines.Length.ToString());
 
