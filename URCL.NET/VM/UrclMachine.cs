@@ -224,6 +224,7 @@ namespace URCL.NET.VM
                         {
                             Invalid();
                         }
+                        break;
                     case Operation.AND:
                         if (inst.IsRegister(Operand.A) && inst.Exists(Operand.B) && inst.Exists(Operand.C))
                         {
