@@ -84,6 +84,11 @@
         BRP,
         [Accepts(OperandType.Label)]
         BRN,
+        
+        [Accepts(OperandType.Label, OperandType.Value)]
+        BEV,
+        [Accepts(OperandType.Label, OperandType.Value)]
+        BOD,
 
         [Accepts(OperandType.Label)]
         CAL,
