@@ -58,8 +58,11 @@ namespace URCL.NET.VM
                 {
                     RamLabels[inst.ALabel] = address;
                 }
+                else
+                {
+                    RAM[address] = item;
+                }
 
-                RAM[address] = item;
                 address++;
             }
 

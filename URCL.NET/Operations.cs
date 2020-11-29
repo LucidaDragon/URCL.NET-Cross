@@ -1,99 +1,101 @@
-﻿namespace URCL.NET
+﻿using System.Collections.Generic;
+
+namespace URCL.NET
 {
     public enum Operation
     {
-        [Accepts()]
+        [Accepts(OperationType.Core)]
         NOP = 0,
-        [Accepts()]
+        [Accepts(OperationType.Custom)]
         BRK,
-        [Accepts()]
+        [Accepts(OperationType.Core)]
         HLT,
 
-        [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any, OperandType.Any)]
         ADD,
-        [Accepts(OperandType.Register, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any)]
         INC,
-        [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any, OperandType.Any)]
         SUB,
-        [Accepts(OperandType.Register, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any)]
         DEC,
-        [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Complex, OperandType.Register, OperandType.Any, OperandType.Any)]
         MLT,
-        [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Complex, OperandType.Register, OperandType.Any, OperandType.Any)]
         DIV,
-        [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Complex, OperandType.Register, OperandType.Any, OperandType.Any)]
         MOD,
 
-        [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any, OperandType.Any)]
         AND,
-        [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any, OperandType.Any)]
         OR,
-        [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any, OperandType.Any)]
         XOR,
-        [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any, OperandType.Any)]
         NAND,
-        [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any, OperandType.Any)]
         NOR,
-        [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any, OperandType.Any)]
         XNOR,
-        [Accepts(OperandType.Register, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any)]
         NOT,
 
-        [Accepts(OperandType.Register, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any)]
         LSH,
-        [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Complex, OperandType.Register, OperandType.Any, OperandType.Any)]
         BSL,
-        [Accepts(OperandType.Register, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any)]
         RSH,
-        [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Complex, OperandType.Register, OperandType.Any, OperandType.Any)]
         BSR,
 
-        [Accepts(OperandType.Register, OperandType.Register)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Register)]
         MOV,
-        [Accepts(OperandType.Register, OperandType.Immediate)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Immediate)]
         IMM,
 
-        [Accepts(OperandType.Register, OperandType.Value)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Any)]
         LOAD,
-        [Accepts(OperandType.Value, OperandType.Register)]
+        [Accepts(OperationType.Core, OperandType.Any, OperandType.Register)]
         STORE,
 
-        [Accepts(OperandType.Register, OperandType.Immediate)]
+        [Accepts(OperationType.Basic, OperandType.Register, OperandType.Immediate)]
         IN,
-        [Accepts(OperandType.Immediate, OperandType.Value)]
+        [Accepts(OperationType.Basic, OperandType.Immediate, OperandType.Any)]
         OUT,
 
-        [Accepts(OperandType.Value)]
+        [Accepts(OperationType.Basic, OperandType.Any)]
         PSH,
-        [Accepts(OperandType.Register)]
+        [Accepts(OperationType.Basic, OperandType.Register)]
         POP,
 
-        [Accepts(OperandType.Label)]
+        [Accepts(OperationType.Core, OperandType.Any)]
         BRA,
-        [Accepts(OperandType.Label)]
+        [Accepts(OperationType.Core, OperandType.Any)]
         BRZ,
-        [Accepts(OperandType.Label)]
+        [Accepts(OperationType.Core, OperandType.Any)]
         BNZ,
-        [Accepts(OperandType.Label)]
+        [Accepts(OperationType.Core, OperandType.Any)]
         BRC,
-        [Accepts(OperandType.Label)]
+        [Accepts(OperationType.Core, OperandType.Any)]
         BNC,
-        [Accepts(OperandType.Label)]
+        [Accepts(OperationType.Core, OperandType.Any)]
         BRP,
-        [Accepts(OperandType.Label)]
+        [Accepts(OperationType.Core, OperandType.Any)]
         BRN,
 
-        [Accepts(OperandType.Label)]
+        [Accepts(OperationType.Complex, OperandType.Any)]
         CAL,
-        [Accepts()]
+        [Accepts(OperationType.Complex)]
         RET,
 
-        [Accepts(OperandType.Immediate)]
+        [Accepts(OperationType.Pragma, OperandType.Immediate)]
         MINRAM,
-        [Accepts(OperandType.Immediate)]
+        [Accepts(OperationType.Pragma, OperandType.Immediate)]
         BITS,
 
-        [Accepts()]
+        [Accepts(OperationType.CustomPragma)]
         BENCHMARK,
 
         COMPILER_CREATELABEL,
@@ -101,5 +103,38 @@
         COMPILER_PRAGMA,
         COMPILER_MAXREG,
         COMPILER_COMMENT
+    }
+
+    public static class OperationExtensions
+    {
+        private static readonly Dictionary<Operation, AcceptsAttribute> Attributes = new Dictionary<Operation, AcceptsAttribute>();
+        
+        static OperationExtensions()
+        {
+            foreach (var field in typeof(Operation).GetFields())
+            {
+                var attribs = field.GetCustomAttributes(typeof(AcceptsAttribute), false);
+
+                if (field.IsStatic && attribs.Length == 1 && field.FieldType == typeof(Operation))
+                {
+                    var attrib = (AcceptsAttribute)attribs[0];
+                    var value = (Operation)field.GetValue(null);
+
+                    Attributes[value] = attrib;
+                }
+            }
+        }
+
+        public static AcceptsAttribute GetAttributes(this Operation op)
+        {
+            if (Attributes.TryGetValue(op, out AcceptsAttribute result))
+            {
+                return result;
+            }
+            else
+            {
+                return new AcceptsAttribute(OperationType.Pragma);
+            }
+        }
     }
 }
