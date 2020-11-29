@@ -37,7 +37,7 @@ namespace UrclBot
                 while (true)
                 {
                     output($"{DateTime.Now} Idle");
-                    await Client.SetGameAsync("Imagine downloading an emulator.", null, ActivityType.Streaming);
+                    await Client.SetGameAsync("on a CPU.", null, ActivityType.Playing);
                     await Client.SetStatusAsync(UserStatus.Idle);
 
                     Sleep.WaitOne();
