@@ -95,7 +95,10 @@ namespace URCL.NET.PlatformAPI
 
                             var optimizer = new UrclOptimizer
                             {
-                                Compatibility = tier
+                                Compatibility = tier,
+                                ReplaceImmZeroWithZeroRegister = true,
+                                CullRedundantMoves = true,
+                                CullCreateLabel = true
                             };
 
                             instructions = optimizer.Optimize(Parser.Parse(lines).ToArray());

@@ -11,6 +11,7 @@ namespace URCL.NET
             set
             {
                 CullRedundantStackOps = value;
+                CullRedundantMoves = value;
                 CullCreateLabel = value;
                 CullComments = value;
                 CullPragmas = value;
@@ -19,6 +20,7 @@ namespace URCL.NET
         }
 
         public bool CullRedundantStackOps { get; set; } = false;
+        public bool CullRedundantMoves { get; set; } = false;
         public bool CullCreateLabel { get; set; } = false;
         public bool CullComments { get; set; } = false;
         public bool CullPragmas { get; set; } = false;
@@ -70,12 +72,12 @@ namespace URCL.NET
                         i = 0;
                     }
                 }
-                else if (ReplaceImmZeroWithZeroRegister && current.Operation == Operation.IMM)
+                else if (ReplaceImmZeroWithZeroRegister &&
+                    current.Operation == Operation.IMM &&
+                    current.BType == OperandType.Immediate &&
+                    current.B == 0)
                 {
-                    if (current.BType == OperandType.Immediate && current.B == 0)
-                    {
-                        insts[i] = new UrclInstruction(Operation.MOV, insts[i].AType, insts[i].A, OperandType.Register, 0);
-                    }
+                    insts[i] = new UrclInstruction(Operation.MOV, insts[i].AType, insts[i].A, OperandType.Register, 0);
                 }
                 else if (CullCreateLabel && current.Operation == Operation.COMPILER_CREATELABEL)
                 {
@@ -88,6 +90,15 @@ namespace URCL.NET
                     i = 0;
                 }
                 else if (CullPragmas && current.Operation == Operation.COMPILER_PRAGMA)
+                {
+                    insts.RemoveAt(i);
+                    i = 0;
+                }
+                else if (CullRedundantMoves &&
+                    current.Operation == Operation.MOV &&
+                    current.AType == OperandType.Register &&
+                    current.BType == OperandType.Register &&
+                    current.A == current.B)
                 {
                     insts.RemoveAt(i);
                     i = 0;
@@ -120,7 +131,14 @@ namespace URCL.NET
                     changed |= hasChanged;
                 }
 
-                insts = result;
+                if (changed)
+                {
+                    insts = new List<UrclInstruction>(Optimize(result.ToArray()));
+                }
+                else
+                {
+                    insts = result;
+                }
             }
 
             return insts.ToArray();
@@ -310,46 +328,46 @@ namespace URCL.NET
                 OrganizeInputs(result.Add, inst, temporary);
 
                 result.Add(new UrclInstruction(Operation.OR, OperandType.Register, 0, OperandType.Register, 2, OperandType.Register, 2));
-                
+
                 result.Add(new UrclInstruction(Operation.BRZ, isZero));
-                
+
                 result.Add(new UrclInstruction(Operation.MOV, OperandType.Register, 3, OperandType.Register, 0));
                 result.Add(new UrclInstruction(Operation.IMM, OperandType.Register, 4, OperandType.Immediate, 1));
-                
+
                 result.Add(new UrclInstruction(Operation.COMPILER_MARKLABEL, top));
-                
+
                 result.Add(new UrclInstruction(Operation.LSH, OperandType.Register, 3, OperandType.Register, 3));
                 result.Add(new UrclInstruction(Operation.LSH, OperandType.Register, 1, OperandType.Register, 1));
-                
+
                 result.Add(new UrclInstruction(Operation.BRC, skipA));
-                
+
                 result.Add(new UrclInstruction(Operation.COMPILER_MARKLABEL, loop));
-                
+
                 result.Add(new UrclInstruction(Operation.SUB, OperandType.Register, 0, OperandType.Register, 3, OperandType.Register, 2));
 
                 result.Add(new UrclInstruction(Operation.BRN, skipB));
-                
+
                 result.Add(new UrclInstruction(Operation.SUB, OperandType.Register, 3, OperandType.Register, 3, OperandType.Register, 2));
                 result.Add(new UrclInstruction(Operation.INC, OperandType.Register, 1, OperandType.Register, 1));
-                
+
                 result.Add(new UrclInstruction(Operation.COMPILER_MARKLABEL, skipB));
 
                 result.Add(new UrclInstruction(Operation.LSH, OperandType.Register, 4, OperandType.Register, 4));
 
                 result.Add(new UrclInstruction(Operation.BRC, end));
-                
+
                 result.Add(new UrclInstruction(Operation.BRA, top));
-                
+
                 result.Add(new UrclInstruction(Operation.COMPILER_MARKLABEL, skipA));
-                
+
                 result.Add(new UrclInstruction(Operation.INC, OperandType.Register, 3, OperandType.Register, 3));
-                
+
                 result.Add(new UrclInstruction(Operation.BRA, loop));
-                
+
                 result.Add(new UrclInstruction(Operation.COMPILER_MARKLABEL, isZero));
-                
+
                 result.Add(new UrclInstruction(Operation.BRK));
-                
+
                 result.Add(new UrclInstruction(Operation.COMPILER_MARKLABEL, end));
 
                 if (inst.A != 1) result.Add(new UrclInstruction(Operation.MOV, OperandType.Register, inst.A, OperandType.Register, 1));
