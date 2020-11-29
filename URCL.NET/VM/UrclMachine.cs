@@ -218,7 +218,7 @@ namespace URCL.NET.VM
                     case Operation.CMP:
                         if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
                         {
-                            Flags = (ResolveValue(inst[Operand.A]) - ResolveValue(inst[Operand.B])));
+                            Flags = (ResolveValue(inst[Operand.A]) - ResolveValue(inst[Operand.B]));
                         }
                         else
                         {
@@ -498,7 +498,7 @@ namespace URCL.NET.VM
                     case Operation.BEV:
                         if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
                         {
-                            if (ResolveValue(inst[Operand.B]) & 1 == 0) InstructionPointer = ResolveValue(inst[Operand.A]) -1;
+                            if (ResolveValue(inst[Operand.B]) % 2 == 0) InstructionPointer = ResolveValue(inst[Operand.A]) -1;
                         }
                         else
                         {
@@ -508,7 +508,7 @@ namespace URCL.NET.VM
                     case Operation.BOD:
                         if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
                         {
-                            if (ResolveValue(inst[Operand.B]) & 1 == 1) InstructionPointer = ResolveValue(inst[Operand.A]) -1;
+                            if (ResolveValue(inst[Operand.B]) % 2 == 1) InstructionPointer = ResolveValue(inst[Operand.A]) -1;
                         }
                         else
                         {
