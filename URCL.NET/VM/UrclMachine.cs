@@ -61,9 +61,8 @@ namespace URCL.NET.VM
                 else
                 {
                     RAM[address] = item;
+                    address++;
                 }
-
-                address++;
             }
 
             return address;
@@ -81,9 +80,11 @@ namespace URCL.NET.VM
                 {
                     RomLabels[inst.ALabel] = address;
                 }
-
-                ROM[address] = item;
-                address++;
+                else
+                {
+                    ROM[address] = item;
+                    address++;
+                }
             }
 
             return address;
@@ -519,6 +520,8 @@ namespace URCL.NET.VM
                     case Operation.COMPILER_CREATELABEL:
                     case Operation.COMPILER_MARKLABEL:
                     case Operation.COMPILER_MAXREG:
+                    case Operation.COMPILER_COMMENT:
+                    case Operation.COMPILER_PRAGMA:
                         break;
                     default:
                         Invalid();
