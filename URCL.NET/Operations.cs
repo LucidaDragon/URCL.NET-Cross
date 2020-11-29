@@ -23,6 +23,8 @@
         DIV,
         [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
         MOD,
+        [Accepts(OperandType.Value, OperandType.Value)]
+        CMP,
 
         [Accepts(OperandType.Register, OperandType.Value, OperandType.Value)]
         AND,
