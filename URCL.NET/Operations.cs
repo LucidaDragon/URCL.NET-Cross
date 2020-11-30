@@ -25,7 +25,7 @@ namespace URCL.NET
         DIV,
         [Accepts(OperationType.Complex, OperandType.Register, OperandType.Any, OperandType.Any)]
         MOD,
-        [Accepts(OperandType.Value, OperandType.Value)]
+        [Accepts(OperationType.Complex, OperandType.Value, OperandType.Value)]
         CMP,
 
         [Accepts(OperationType.Core, OperandType.Register, OperandType.Any, OperandType.Any)]
@@ -87,9 +87,9 @@ namespace URCL.NET
         [Accepts(OperationType.Core, OperandType.Any)]
         BRN,
         
-        [Accepts(OperandType.Label, OperandType.Value)]
+        [Accepts(OperationType.Complex, OperandType.Label, OperandType.Value)]
         BEV,
-        [Accepts(OperandType.Label, OperandType.Value)]
+        [Accepts(OperationType.Complex, OperandType.Label, OperandType.Value)]
         BOD,
 
         [Accepts(OperationType.Complex, OperandType.Any)]
