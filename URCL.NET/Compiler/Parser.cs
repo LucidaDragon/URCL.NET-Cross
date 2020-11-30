@@ -37,7 +37,7 @@ namespace URCL.NET.Compiler
                         {
                             result = ParseInstruction(trimmed, parseIteration == 0, parseIteration > 0, labels, valueMacros, codeMacros);
 
-                            if (parseIteration == 1)
+                            if (parseIteration == 1 && result != null)
                             {
                                 if (result.Operation == Operation.MINRAM && result.A > ram)
                                 {
