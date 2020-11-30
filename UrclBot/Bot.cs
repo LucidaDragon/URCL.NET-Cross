@@ -14,6 +14,7 @@ namespace UrclBot
     public class Bot : IDisposable
     {
         public ulong? Owner { get; }
+        public ulong? Self { get; private set; }
 
         private readonly UrclInterface Urcl;
         private readonly DiscordSocketClient Client;
@@ -82,51 +83,60 @@ namespace UrclBot
 
             Client.MessageReceived += (m) =>
             {
-                foreach (var user in m.MentionedUsers)
+                if (!Self.HasValue && Client.CurrentUser != null) Self = Client.CurrentUser.Id;
+
+                if (Self.HasValue)
                 {
-                    if (user.IsBot && user.Id == Client.CurrentUser.Id)
+                    foreach (var user in m.MentionedUsers)
                     {
-                        var foundFile = false;
-
-                        foreach (var attach in m.Attachments)
+                        if (user.IsBot && user.Id == Self.Value)
                         {
-                            if (attach.Filename.ToLower().EndsWith("urcl"))
+                            var foundFile = false;
+
+                            foreach (var attach in m.Attachments)
                             {
-                                foundFile = true;
-
-                                if (attach.Size <= ushort.MaxValue)
+                                if (attach.Filename.ToLower().EndsWith("urcl"))
                                 {
-                                    Reply(m, $"\"{attach.Filename}\" is now in queue.");
+                                    foundFile = true;
 
-                                    Jobs.Enqueue(new BotTask(m, attach));
+                                    if (attach.Size <= ushort.MaxValue)
+                                    {
+                                        Reply(m, $"\"{attach.Filename}\" is now in queue.");
+
+                                        Jobs.Enqueue(new BotTask(m, attach));
+                                        Sleep.Set();
+                                    }
+                                    else
+                                    {
+                                        Reply(m, $"Attached file \"{attach.Filename}\" is too large. (Must be {ushort.MaxValue} bytes or less)");
+                                    }
+                                }
+                            }
+
+                            if (!foundFile)
+                            {
+                                var match = Regex.Match(m.Content, @"([\w]+)?\s*([\w]+)?\s*([\w]+)?\s*(```((.|\n)*)```)");
+
+                                if (match.Success)
+                                {
+                                    var lang = match.Groups[1].Success ? match.Groups[1].Value : "urcl";
+                                    var outputType = match.Groups[2].Success ? match.Groups[2].Value : "emulate";
+                                    var tier = match.Groups[3].Success ? match.Groups[3].Value : "any";
+
+                                    Jobs.Enqueue(new BotTask(m, lang, outputType, tier, match.Groups[5].Value));
                                     Sleep.Set();
                                 }
                                 else
                                 {
-                                    Reply(m, $"Attached file \"{attach.Filename}\" is too large. (Must be {ushort.MaxValue} bytes or less)");
+                                    Reply(m, "Code block was not specified.");
                                 }
                             }
                         }
-
-                        if (!foundFile)
-                        {
-                            var match = Regex.Match(m.Content, @"([\w]+)?\s*([\w]+)?\s*([\w]+)?\s*(```((.|\n)*)```)");
-
-                            if (match.Success)
-                            {
-                                var lang = match.Groups[1].Success ? match.Groups[1].Value : "urcl";
-                                var outputType = match.Groups[2].Success ? match.Groups[2].Value : "emulate";
-                                var tier = match.Groups[3].Success ? match.Groups[3].Value : "any";
-
-                                Jobs.Enqueue(new BotTask(m, lang, outputType, tier, match.Groups[5].Value));
-                                Sleep.Set();
-                            }
-                            else
-                            {
-                                Reply(m, "Code block was not specified.");
-                            }
-                        }
                     }
+                }
+                else
+                {
+                    output("Failed to obtain self ID.");
                 }
 
                 return Task.CompletedTask;
