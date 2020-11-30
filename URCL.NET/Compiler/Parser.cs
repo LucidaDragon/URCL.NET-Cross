@@ -8,7 +8,7 @@ namespace URCL.NET.Compiler
 {
     public static class Parser
     {
-        private static readonly string[] IgnoredOps = new[] { "BITS", "MINREG", "IMPORT" };
+        private static readonly string[] IgnoredOps = new[] { "MINREG", "IMPORT" };
 
         public static IEnumerable<UrclInstruction> Parse(IEnumerable<string> lines)
         {
