@@ -58,7 +58,7 @@ namespace URCL.NET.Compiler
                                 {
                                     result = null;
                                 }
-                                if (result.Operation == Operation.COMPILER_CODEMACRO_BEGIN)
+                                else if (result.Operation == Operation.COMPILER_CODEMACRO_BEGIN)
                                 {
                                     if (macroName != null) throw new ParserError("Macro was not finished before starting another macro.");
                                     macroName = result.Arguments[0];
@@ -76,7 +76,19 @@ namespace URCL.NET.Compiler
                                 else if (result.Operation == Operation.COMPILER_CODEMACRO_USE)
                                 {
                                     if (macroName != null) throw new ParserError("Nested macros are not supported.");
-                                    block = codeMacros[result.Arguments[0]];
+                                    if (codeMacros.TryGetValue(result.Arguments[0], out IEnumerable<UrclInstruction> insts))
+                                    {
+                                        block = insts;
+                                        result = null;
+                                    }
+                                    else
+                                    {
+                                        throw new ParserError($"Undefined macro \"{result.Arguments[0]}\"");
+                                    }
+                                }
+                                else if (macroName != null)
+                                {
+                                    macroBuffer.Add(result);
                                     result = null;
                                 }
                             }
@@ -164,13 +176,9 @@ namespace URCL.NET.Compiler
                         {
                             return new UrclInstruction(Operation.COMPILER_CODEMACRO_END);
                         }
-                        else if (codeMacros.ContainsKey(tag))
-                        {
-                            return new UrclInstruction(Operation.COMPILER_CODEMACRO_USE, new[] { tag });
-                        }
                         else
                         {
-                            throw new ParserError($"Undefined macro \"{tag}\"");
+                            return new UrclInstruction(Operation.COMPILER_CODEMACRO_USE, new[] { tag });
                         }
                     }
 
