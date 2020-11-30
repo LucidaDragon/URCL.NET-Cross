@@ -32,7 +32,7 @@ namespace URCL.NET.PlatformLuC
 
                 compiler.Compile(LuC.Parser.Parse(compiler, source));
 
-                LuC.Standard.AddStandardDefaults(compiler);
+                Standard.AddStandardDefaults(compiler);
 
                 var emitter = new Emitters.Urcl(compiler);
                 compiler.Emit(emitter, "Program.Main");

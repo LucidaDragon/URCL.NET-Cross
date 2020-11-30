@@ -31,7 +31,7 @@ namespace URCL.NET
 
                 var configuration = builder.Configuration;
 
-                if (string.IsNullOrEmpty(configuration.Output)) configuration.Output = "output.txt";
+                if (string.IsNullOrEmpty(configuration.Output)) configuration.Output = "output.urcl";
 
                 //Load compiler modules.
                 var moduleLoader = new ModuleLoader();
@@ -66,7 +66,7 @@ namespace URCL.NET
 
                             if (!moduleLoader.ExecuteEmitter(outExt, stream.WriteByte, instructions))
                             {
-                                Console.WriteLine($"File \"{file}\" is not supported.");
+                                Console.WriteLine($"File \"{file}\" to output \"{configuration.Output}\" is not supported.");
                                 Environment.Exit(2);
                                 return;
                             }

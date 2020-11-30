@@ -72,6 +72,17 @@ namespace URCL.NET
                             errorOut($"Value \"{configArgs[1]}\" is not valid for configuration \"{prop.Name}\".");
                         }
                     }
+                    else if (typeof(Enum).IsAssignableFrom(prop.PropertyType))
+                    {
+                        if (Enum.TryParse(prop.PropertyType, configArgs[1], out object value))
+                        {
+                            prop.SetValue(Configuration, value);
+                        }
+                        else
+                        {
+                            errorOut($"Value \"{configArgs[1]}\" is not valid for configuration \"{prop.Name}\".");
+                        }
+                    }
                     else if (prop.PropertyType == typeof(string))
                     {
                         prop.SetValue(Configuration, string.Join(" ", configArgs.Skip(1)));

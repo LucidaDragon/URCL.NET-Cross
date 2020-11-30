@@ -217,7 +217,7 @@ namespace URCL.NET
 
         public bool ExecuteEmitter(string ext, Action<byte> emit, IEnumerable<UrclInstruction> instructions)
         {
-            if (FileHandlers.TryGetValue(ext.ToLower(), out MethodInfo method))
+            if (Emitters.TryGetValue(ext.ToLower(), out MethodInfo method))
             {
                 var parameters = method.GetParameters();
                 var target = method.DeclaringType.GetConstructor(Type.EmptyTypes).Invoke(null);
