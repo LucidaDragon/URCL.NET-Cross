@@ -64,7 +64,7 @@ namespace URCL.NET
                         {
                             using var stream = new FileStream(configuration.Output, FileMode.Create, FileAccess.ReadWrite);
 
-                            if (!moduleLoader.ExecuteEmitter(outExt, stream.WriteByte, instructions))
+                            if (!moduleLoader.ExecuteEmitter(outExt, stream.WriteByte, instructions, Console.WriteLine))
                             {
                                 Console.WriteLine($"File \"{file}\" to output \"{configuration.Output}\" is not supported.");
                                 Environment.Exit(2);

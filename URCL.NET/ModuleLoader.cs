@@ -215,58 +215,73 @@ namespace URCL.NET
             }
         }
 
-        public bool ExecuteEmitter(string ext, Action<byte> emit, IEnumerable<UrclInstruction> instructions)
+        public bool ExecuteEmitter(string ext, Action<byte> emit, IEnumerable<UrclInstruction> instructions, Action<string> error)
         {
-            if (Emitters.TryGetValue(ext.ToLower(), out MethodInfo method))
+            try
             {
-                var parameters = method.GetParameters();
-                var target = method.DeclaringType.GetConstructor(Type.EmptyTypes).Invoke(null);
-
-                object emitter = emit;
-
-                if (parameters[0].ParameterType == typeof(Action<string>))
+                try
                 {
-                    emitter = new Action<string>((str) =>
+                    if (Emitters.TryGetValue(ext.ToLower(), out MethodInfo method))
                     {
-                        foreach (var b in Encoding.UTF8.GetBytes(str)) emit(b);
-                        foreach (var b in Encoding.UTF8.GetBytes(Environment.NewLine)) emit(b);
-                    });
-                }
+                        var parameters = method.GetParameters();
+                        var target = method.DeclaringType.GetConstructor(Type.EmptyTypes).Invoke(null);
 
-                if (parameters.Length == 2)
-                {
-                    if (parameters[1].ParameterType == typeof(IEnumerable<UrclInstruction>))
-                    {
-                        method.Invoke(target, new object[] { emitter, instructions });
+                        object emitter = emit;
+
+                        if (parameters[0].ParameterType == typeof(Action<string>))
+                        {
+                            emitter = new Action<string>((str) =>
+                            {
+                                foreach (var b in Encoding.UTF8.GetBytes(str)) emit(b);
+                                foreach (var b in Encoding.UTF8.GetBytes(Environment.NewLine)) emit(b);
+                            });
+                        }
+
+                        if (parameters.Length == 2)
+                        {
+                            if (parameters[1].ParameterType == typeof(IEnumerable<UrclInstruction>))
+                            {
+                                method.Invoke(target, new object[] { emitter, instructions });
+                            }
+                            else
+                            {
+                                foreach (var inst in instructions)
+                                {
+                                    method.Invoke(target, new object[] { emitter, inst });
+                                }
+                            }
+                        }
+                        else
+                        {
+                            foreach (var inst in instructions)
+                            {
+                                method.Invoke(target, new object[]
+                                {
+                                    emit,
+                                    inst.GetComponent(0),
+                                    inst.GetComponent(1),
+                                    inst.GetComponent(2),
+                                    inst.GetComponent(3)
+                                });
+                            }
+                        }
+
+                        return true;
                     }
                     else
                     {
-                        foreach (var inst in instructions)
-                        {
-                            method.Invoke(target, new object[] { emitter, inst });
-                        }
+                        return false;
                     }
                 }
-                else
+                catch (TargetInvocationException ex)
                 {
-                    foreach (var inst in instructions)
-                    {
-                        method.Invoke(target, new object[]
-                        {
-                            emit,
-                            inst.GetComponent(0),
-                            inst.GetComponent(1),
-                            inst.GetComponent(2),
-                            inst.GetComponent(3)
-                        });
-                    }
+                    throw ex.InnerException;
                 }
-
-                return true;
             }
-            else
+            catch (Exception ex)
             {
-                return false;
+                error(ex.Message);
+                return true;
             }
         }
 

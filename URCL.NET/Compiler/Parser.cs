@@ -8,7 +8,7 @@ namespace URCL.NET.Compiler
 {
     public class Parser
     {
-        private static readonly string[] IgnoredOps = new[] { "MINREG", "IMPORT" };
+        private static readonly string[] IgnoredOps = new[] { "MINREG" };
 
         private readonly Dictionary<string, Label> Labels = new Dictionary<string, Label>();
         private readonly Dictionary<string, ulong> ValueMacros = new Dictionary<string, ulong>();
@@ -16,6 +16,9 @@ namespace URCL.NET.Compiler
 
         public IEnumerable<UrclInstruction> Parse(IEnumerable<string> lines, Func<string, IEnumerable<string>> import, string sourceName = null)
         {
+            var lineLabels = new Label[lines.Count()];
+            var used = new bool[lineLabels.Length];
+
             for (int parseIteration = 0; parseIteration < 3; parseIteration++)
             {
                 string macroName = null;
@@ -26,14 +29,27 @@ namespace URCL.NET.Compiler
                 {
                     var trimmed = line.Trim();
 
-                    if (trimmed.Length != 0 && !line.StartsWith("//"))
+                    if (!ParserIgnore(trimmed))
                     {
+                        if (parseIteration == 0) lineLabels[index] = new Label();
+
                         UrclInstruction result = null;
                         IEnumerable<UrclInstruction> block = null;
 
                         try
                         {
-                            result = ParseInstruction(trimmed, parseIteration == 0, parseIteration > 0, Labels, ValueMacros, CodeMacros);
+                            result = ParseInstruction(trimmed, parseIteration == 0, parseIteration > 0, Labels, ValueMacros, CodeMacros, (rel) => 
+                            {
+                                var target = rel + index;
+
+                                if (target < 0 || target >= lineLabels.Length || lineLabels[target] is null)
+                                {
+                                    throw new ParserError("Relative address is out of bounds.");
+                                }
+
+                                used[target] = true;
+                                return lineLabels[target];
+                            });
 
                             if (parseIteration == 1 && result != null)
                             {
@@ -87,9 +103,18 @@ namespace URCL.NET.Compiler
                                 }
                             }
                         }
+                        catch (TargetInvocationException ex)
+                        {
+                            throw new ParserError($"Error on line {index + 1}: \"{line}\" {ex.InnerException.Message}");
+                        }
                         catch (ParserError ex)
                         {
                             throw new ParserError($"Error on line {index + 1}: \"{line}\" {ex.Message}");
+                        }
+
+                        if ((result != null || block != null) && used[index])
+                        {
+                            yield return new UrclInstruction(Operation.COMPILER_MARKLABEL, lineLabels[Array.IndexOf(lineLabels, lineLabels[index])]);
                         }
 
                         if (result != null) yield return result;
@@ -101,13 +126,27 @@ namespace URCL.NET.Compiler
                             }
                         }
                     }
+                    else
+                    {
+                        if (parseIteration == 0)
+                        {
+                            if (index > 0)
+                            {
+                                lineLabels[index] = lineLabels[index - 1];
+                            }
+                            else
+                            {
+                                lineLabels[index] = null;
+                            }
+                        }
+                    }
 
                     index++;
                 }
             }
         }
 
-        private static UrclInstruction ParseInstruction<TMacro>(string line, bool labelsOnly, bool instructionsOnly, Dictionary<string, Label> labels, Dictionary<string, ulong> valueMacros, Dictionary<string, TMacro> codeMacros)
+        private static UrclInstruction ParseInstruction<TMacro>(string line, bool labelsOnly, bool instructionsOnly, Dictionary<string, Label> labels, Dictionary<string, ulong> valueMacros, Dictionary<string, TMacro> codeMacros, Func<long, Label> getRelative)
         {
             if (line.StartsWith('.'))
             {
@@ -230,6 +269,16 @@ namespace URCL.NET.Compiler
                             values[i] = v;
                             valueTypes[i] = OperandType.Immediate;
                         }
+                        else if (arg.StartsWith('+') && long.TryParse(arg.Substring(1), out long rel))
+                        {
+                            values[i] = getRelative(rel);
+                            valueTypes[i] = OperandType.Label;
+                        }
+                        else if (arg.StartsWith('-') && long.TryParse(arg, out rel))
+                        {
+                            values[i] = getRelative(rel);
+                            valueTypes[i] = OperandType.Label;
+                        }
                         else if (ulong.TryParse(arg, out v))
                         {
                             values[i] = v;
@@ -308,6 +357,12 @@ namespace URCL.NET.Compiler
             }
 
             return true;
+        }
+
+        private static bool ParserIgnore(string line)
+        {
+            line = line.Trim();
+            return line.Length == 0 || line.StartsWith("//");
         }
     }
 }
