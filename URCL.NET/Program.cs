@@ -54,7 +54,7 @@ namespace URCL.NET
 
                     if (inExt == "urcl")
                     {
-                        var instructions = Parser.Parse(File.ReadAllLines(file));
+                        var instructions = new Parser().Parse(LoadFile(file), LoadFile);
 
                         if (configuration.Emulate)
                         {
@@ -87,7 +87,7 @@ namespace URCL.NET
                                 return;
                             }
 
-                            EmulatorHost.Emulator(configuration, Parser.Parse(lines), Console.WriteLine, () => { Console.ReadKey(true); }, true);
+                            EmulatorHost.Emulator(configuration, new Parser().Parse(lines, LoadFile), Console.WriteLine, () => { Console.ReadKey(true); }, true);
                         }
                         else
                         {
@@ -119,6 +119,18 @@ namespace URCL.NET
             catch (Exception ex)
             {
                 Console.WriteLine($"Fatal Error: {ex}");
+            }
+        }
+
+        private static IEnumerable<string> LoadFile(string file)
+        {
+            if (File.Exists(file))
+            {
+                return File.ReadAllLines(file);
+            }
+            else
+            {
+                throw new ParserError($"File \"{file}\" was not found.");
             }
         }
     }

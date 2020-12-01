@@ -9,7 +9,7 @@ namespace URCL.NET
         Register = 1,
         Immediate = 2,
         Label = 4,
-        Comment = 8,
+        String = 8,
 
         Value = Register | Immediate,
         Address = Immediate | Label,

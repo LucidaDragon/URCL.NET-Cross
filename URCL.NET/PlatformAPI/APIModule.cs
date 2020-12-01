@@ -108,7 +108,10 @@ namespace URCL.NET.PlatformAPI
                                 CullCreateLabel = true
                             };
 
-                            instructions = optimizer.Optimize(Parser.Parse(lines).ToArray());
+                            instructions = optimizer.Optimize(new Parser().Parse(lines, (imp) => 
+                            {
+                                throw new ParserError("Imports are not supported via the API.");
+                            }).ToArray());
 
                             if (outType == "emulate")
                             {

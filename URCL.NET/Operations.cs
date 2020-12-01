@@ -101,6 +101,8 @@ namespace URCL.NET
         MINRAM,
         [Accepts(OperationType.Pragma, OperandType.Immediate)]
         BITS,
+        [Accepts(OperationType.Pragma, OperandType.String)]
+        IMPORT,
 
         [Accepts(OperationType.CustomPragma)]
         BENCHMARK,

@@ -6,18 +6,16 @@ using System.Reflection;
 
 namespace URCL.NET.Compiler
 {
-    public static class Parser
+    public class Parser
     {
         private static readonly string[] IgnoredOps = new[] { "MINREG", "IMPORT" };
 
-        public static IEnumerable<UrclInstruction> Parse(IEnumerable<string> lines)
-        {
-            var labels = new Dictionary<string, Label>();
-            var valueMacros = new Dictionary<string, ulong>();
-            var codeMacros = new Dictionary<string, IEnumerable<UrclInstruction>>();
+        private readonly Dictionary<string, Label> Labels = new Dictionary<string, Label>();
+        private readonly Dictionary<string, ulong> ValueMacros = new Dictionary<string, ulong>();
+        private readonly Dictionary<string, IEnumerable<UrclInstruction>> CodeMacros = new Dictionary<string, IEnumerable<UrclInstruction>>();
 
-            ulong ram = 1024;
-            ulong maxReg = 0;
+        public IEnumerable<UrclInstruction> Parse(IEnumerable<string> lines, Func<string, IEnumerable<string>> import, string sourceName = null)
+        {
             for (int parseIteration = 0; parseIteration < 3; parseIteration++)
             {
                 string macroName = null;
@@ -35,30 +33,11 @@ namespace URCL.NET.Compiler
 
                         try
                         {
-                            result = ParseInstruction(trimmed, parseIteration == 0, parseIteration > 0, labels, valueMacros, codeMacros);
+                            result = ParseInstruction(trimmed, parseIteration == 0, parseIteration > 0, Labels, ValueMacros, CodeMacros);
 
                             if (parseIteration == 1 && result != null)
                             {
-                                if (result.Operation == Operation.MINRAM && result.A > ram)
-                                {
-                                    ram = result.A;
-                                }
-                                else
-                                {
-                                    if (result.AType == OperandType.Register && result.A > maxReg) maxReg = result.A;
-                                    if (result.BType == OperandType.Register && result.B > maxReg) maxReg = result.B;
-                                    if (result.CType == OperandType.Register && result.C > maxReg) maxReg = result.C;
-                                }
-
-                                result = null;
-                            }
-                            else if (result != null)
-                            {
-                                if (result.Operation == Operation.MINRAM)
-                                {
-                                    result = null;
-                                }
-                                else if (result.Operation == Operation.COMPILER_CODEMACRO_BEGIN)
+                                if (result.Operation == Operation.COMPILER_CODEMACRO_BEGIN)
                                 {
                                     if (macroName != null) throw new ParserError("Macro was not finished before starting another macro.");
                                     macroName = result.Arguments[0];
@@ -68,7 +47,7 @@ namespace URCL.NET.Compiler
                                 else if (result.Operation == Operation.COMPILER_CODEMACRO_END)
                                 {
                                     if (macroName == null) throw new ParserError("Missing beginning of macro.");
-                                    codeMacros[macroName] = macroBuffer.ToArray();
+                                    CodeMacros[macroName] = macroBuffer.ToArray();
                                     macroName = null;
                                     macroBuffer.Clear();
                                     result = null;
@@ -76,7 +55,7 @@ namespace URCL.NET.Compiler
                                 else if (result.Operation == Operation.COMPILER_CODEMACRO_USE)
                                 {
                                     if (macroName != null) throw new ParserError("Nested macros are not supported.");
-                                    if (codeMacros.TryGetValue(result.Arguments[0], out IEnumerable<UrclInstruction> insts))
+                                    if (CodeMacros.TryGetValue(result.Arguments[0], out IEnumerable<UrclInstruction> insts))
                                     {
                                         block = insts;
                                         result = null;
@@ -86,9 +65,24 @@ namespace URCL.NET.Compiler
                                         throw new ParserError($"Undefined macro \"{result.Arguments[0]}\"");
                                     }
                                 }
+                                else if (result.Operation == Operation.IMPORT)
+                                {
+                                    var name = result.Arguments[0];
+                                    block = Parse(import(string.Join(' ', result.Arguments)), import, sourceName).ToArray();
+                                    result = null;
+                                }
                                 else if (macroName != null)
                                 {
                                     macroBuffer.Add(result);
+                                    result = null;
+                                }
+
+                                result = null;
+                            }
+                            else if (result != null)
+                            {
+                                if (result.Operation == Operation.MINRAM || result.Operation == Operation.IMPORT)
+                                {
                                     result = null;
                                 }
                             }
@@ -109,12 +103,6 @@ namespace URCL.NET.Compiler
                     }
 
                     index++;
-                }
-
-                if (parseIteration == 1)
-                {
-                    yield return new UrclInstruction(Operation.COMPILER_MAXREG, OperandType.Immediate, maxReg);
-                    yield return new UrclInstruction(Operation.MINRAM, OperandType.Immediate, ram);
                 }
             }
         }
@@ -251,6 +239,12 @@ namespace URCL.NET.Compiler
                         {
                             values[i] = v;
                             valueTypes[i] = OperandType.Immediate;
+                        }
+                        else if (allowedTypes.Length == 1 && allowedTypes[0] == OperandType.String)
+                        {
+                            values[i] = args.Skip(1).Select(str => str.Trim()).ToArray();
+                            valueTypes[i] = OperandType.String;
+                            if (allowedTypes[i].HasFlag(valueTypes[i])) break;
                         }
                         else
                         {
