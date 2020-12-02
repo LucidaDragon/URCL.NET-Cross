@@ -45,7 +45,7 @@ namespace UrclBot
         {
             Source = source;
             Language = Path.GetExtension(content.Filename).TrimStart('.');
-            OutputType = "emulated";
+            OutputType = "emulate";
             Tier = "any";
             Attachment = content;
             Name = content.Filename;
