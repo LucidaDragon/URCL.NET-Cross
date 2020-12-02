@@ -70,7 +70,7 @@ namespace UrclBot
 
             Client.Log += (m) =>
             {
-                output($"[\"{m.Severity}\"] {m.Message} {m.Exception}");
+                output($"{DateTime.Now} {m.Message} {m.Exception}");
 
                 return Task.CompletedTask;
             };
