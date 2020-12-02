@@ -459,6 +459,7 @@ namespace URCL.NET.VM
                         }
                         break;
                     case Operation.POP:
+                        if (ValueStack.Count == 0) throw new InvalidOperationException(this, InvalidOperationException.StackEmpty);
                         if (inst.IsRegister(Operand.A))
                         {
                             SetRegister(inst[Operand.A], ValueStack.Pop());
@@ -831,6 +832,7 @@ namespace URCL.NET.VM
             public const string NotEnoughMemory = "Core tried to access memory out of range.";
             public const string NotEnoughRegisters = "Core tried to access more registers than it has.";
             public const string StackOverflow = "Stack overflow occured.";
+            public const string StackEmpty = "Stack underflow occured.";
             public const string InvalidData = "The type of data in memory is not supported.";
             public const string InvalidFetchData = "The data at the fetched address is not a valid instruction.";
             public const string InvalidInstruction = "The executed instruction was invalid.";
