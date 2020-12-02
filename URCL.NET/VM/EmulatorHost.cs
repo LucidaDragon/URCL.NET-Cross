@@ -59,7 +59,7 @@ namespace URCL.NET.VM
                 }
                 catch (UrclMachine.InvalidOperationException ex)
                 {
-                    output($"Fault! {ex.Message}");
+                    output($"***Fault! {ex.Message}***");
                     fault = true;
                     break;
                 }
