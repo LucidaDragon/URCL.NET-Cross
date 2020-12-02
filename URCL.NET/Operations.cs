@@ -97,6 +97,13 @@ namespace URCL.NET
         [Accepts(OperationType.Complex)]
         RET,
 
+        [Accepts(OperationType.Custom, OperandType.Immediate)]
+        DW,
+        [Accepts(OperationType.Custom, OperandType.Immediate)]
+        DD,
+        [Accepts(OperationType.Custom, OperandType.Immediate)]
+        DQ,
+
         [Accepts(OperationType.Pragma, OperandType.Immediate)]
         MINRAM,
         [Accepts(OperationType.Pragma, OperandType.Immediate)]
