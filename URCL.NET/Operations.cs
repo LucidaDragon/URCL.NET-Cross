@@ -25,6 +25,8 @@ namespace URCL.NET
         DIV,
         [Accepts(OperationType.Complex, OperandType.Register, OperandType.Any, OperandType.Any)]
         MOD,
+        [Accepts(OperationType.Complex, OperandType.Any, OperandType.Any)]
+        CMP,
 
         [Accepts(OperationType.Core, OperandType.Register, OperandType.Any, OperandType.Any)]
         AND,
@@ -84,16 +86,30 @@ namespace URCL.NET
         BRP,
         [Accepts(OperationType.Core, OperandType.Any)]
         BRN,
+        
+        [Accepts(OperationType.Complex, OperandType.Any, OperandType.Value)]
+        BEV,
+        [Accepts(OperationType.Complex, OperandType.Any, OperandType.Value)]
+        BOD,
 
         [Accepts(OperationType.Complex, OperandType.Any)]
         CAL,
         [Accepts(OperationType.Complex)]
         RET,
 
+        [Accepts(OperationType.Core, OperandType.Immediate)]
+        DW,
+        [Accepts(OperationType.Core, OperandType.Immediate)]
+        DD,
+        [Accepts(OperationType.Core, OperandType.Immediate)]
+        DQ,
+
         [Accepts(OperationType.Pragma, OperandType.Immediate)]
         MINRAM,
         [Accepts(OperationType.Pragma, OperandType.Immediate)]
         BITS,
+        [Accepts(OperationType.Pragma, OperandType.String)]
+        IMPORT,
 
         [Accepts(OperationType.CustomPragma)]
         BENCHMARK,
@@ -101,6 +117,10 @@ namespace URCL.NET
         COMPILER_CREATELABEL,
         COMPILER_MARKLABEL,
         COMPILER_PRAGMA,
+        COMPILER_VALUEMACRO,
+        COMPILER_CODEMACRO_BEGIN,
+        COMPILER_CODEMACRO_END,
+        COMPILER_CODEMACRO_USE,
         COMPILER_MAXREG,
         COMPILER_COMMENT
     }

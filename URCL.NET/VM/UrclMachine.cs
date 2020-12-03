@@ -48,41 +48,58 @@ namespace URCL.NET.VM
 
         public ulong LoadRAM(ulong address, IEnumerable data)
         {
-            foreach (var item in data)
-            {
-                if (item is Label l)
-                {
-                    RamLabels[l] = address;
-                }
-                else if (item is UrclInstruction inst && inst.Operation == Operation.COMPILER_MARKLABEL && inst.AType == OperandType.Label)
-                {
-                    RamLabels[inst.ALabel] = address;
-                }
-                else
-                {
-                    RAM[address] = item;
-                    address++;
-                }
-            }
-
-            return address;
+            return LoadMemory(RAM, RamLabels, address, data);
         }
 
         public ulong LoadROM(ulong address, IEnumerable data)
+        {
+            return LoadMemory(ROM, RomLabels, address, data);
+        }
+
+        private ulong LoadMemory(object[] memory, Dictionary<Label, ulong> labels, ulong address, IEnumerable data)
         {
             foreach (var item in data)
             {
                 if (item is Label l)
                 {
-                    RomLabels[l] = address;
+                    labels[l] = address;
                 }
-                else if (item is UrclInstruction inst && inst.Operation == Operation.COMPILER_MARKLABEL && inst.AType == OperandType.Label)
+                else if (item is UrclInstruction inst && ((inst.Operation == Operation.COMPILER_MARKLABEL && inst.AType == OperandType.Label) || ((inst.Operation == Operation.DW || inst.Operation == Operation.DD || inst.Operation == Operation.DQ) && inst.AType == OperandType.Immediate)))
                 {
-                    RomLabels[inst.ALabel] = address;
+                    switch (inst.Operation)
+                    {
+                        case Operation.COMPILER_MARKLABEL:
+                            labels[inst.ALabel] = address;
+                            break;
+                        case Operation.DW:
+                            memory[address] = inst.A & BitMask;
+                            address++;
+                            break;
+                        case Operation.DD:
+                            {
+                                SplitBits(inst.A, BitMask, out ulong lower, out ulong upper, out _, out _);
+                                memory[address] = lower;
+                                memory[address + 1] = upper;
+                                address += 2;
+                            }
+                            break;
+                        case Operation.DQ:
+                            {
+                                SplitBits(inst.A, BitMask, out ulong lower, out ulong upper, out ulong lowerMask, out ulong upperMask);
+                                SplitBits(lower, lowerMask, out ulong lowerlower, out ulong upperlower, out _, out _);
+                                SplitBits(upper, upperMask, out ulong lowerupper, out ulong upperupper, out _, out _);
+                                memory[address] = lowerlower;
+                                memory[address + 1] = upperlower;
+                                memory[address + 2] = lowerupper;
+                                memory[address + 3] = upperupper;
+                                address += 4;
+                            }
+                            break;
+                    }
                 }
                 else
                 {
-                    ROM[address] = item;
+                    memory[address] = item;
                     address++;
                 }
             }
@@ -110,6 +127,29 @@ namespace URCL.NET.VM
             CurrentCore = 0;
 
             return false;
+        }
+
+        private static void SplitBits(ulong value, ulong bitmask, out ulong lower, out ulong upper, out ulong lowerMask, out ulong upperMask)
+        {
+            var width = GetBits(bitmask);
+            var lowerWidth = width / 2;
+            upperMask = bitmask >> lowerWidth;
+            lowerMask = (upperMask << lowerWidth) ^ bitmask;
+            upper = (value >> lowerWidth) & upperMask;
+            lower = value & lowerMask;
+        }
+
+        private static int GetBits(ulong mask)
+        {
+            var bits = 0;
+
+            while (mask != 0)
+            {
+                mask >>= 1;
+                bits++;
+            }
+
+            return bits;
         }
 
         public class Core
@@ -215,6 +255,16 @@ namespace URCL.NET.VM
                         if (inst.IsRegister(Operand.A) && inst.Exists(Operand.B) && inst.Exists(Operand.C))
                         {
                             SetRegister(inst[Operand.A], Flags = (ResolveValue(inst[Operand.B]) % ResolveValue(inst[Operand.C])));
+                        }
+                        else
+                        {
+                            Invalid();
+                        }
+                        break;
+                    case Operation.CMP:
+                        if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
+                        {
+                            Flags = (ResolveValue(inst[Operand.A]) - ResolveValue(inst[Operand.B]));
                         }
                         else
                         {
@@ -409,6 +459,7 @@ namespace URCL.NET.VM
                         }
                         break;
                     case Operation.POP:
+                        if (ValueStack.Count == 0) throw new InvalidOperationException(this, InvalidOperationException.StackEmpty);
                         if (inst.IsRegister(Operand.A))
                         {
                             SetRegister(inst[Operand.A], ValueStack.Pop());
@@ -486,6 +537,26 @@ namespace URCL.NET.VM
                         if (inst.Exists(Operand.A))
                         {
                             if (Flags > long.MaxValue) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                        }
+                        else
+                        {
+                            Invalid();
+                        }
+                        break;
+                    case Operation.BEV:
+                        if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
+                        {
+                            if (ResolveValue(inst[Operand.B]) % 2 == 0) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                        }
+                        else
+                        {
+                            Invalid();
+                        }
+                        break;
+                    case Operation.BOD:
+                        if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
+                        {
+                            if (ResolveValue(inst[Operand.B]) % 2 == 1) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -761,6 +832,7 @@ namespace URCL.NET.VM
             public const string NotEnoughMemory = "Core tried to access memory out of range.";
             public const string NotEnoughRegisters = "Core tried to access more registers than it has.";
             public const string StackOverflow = "Stack overflow occured.";
+            public const string StackEmpty = "Stack underflow occured.";
             public const string InvalidData = "The type of data in memory is not supported.";
             public const string InvalidFetchData = "The data at the fetched address is not a valid instruction.";
             public const string InvalidInstruction = "The executed instruction was invalid.";

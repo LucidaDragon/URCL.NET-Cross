@@ -204,6 +204,10 @@ namespace URCL.NET
                     A = 0;
                     ALabel = (Label)operands[0];
                 }
+                else if (AType == OperandType.String)
+                {
+                    Arguments = operands[0] as string[];
+                }
                 else
                 {
                     A = (ulong)operands[0];
@@ -313,6 +317,7 @@ namespace URCL.NET
                 OperandType.Register => $"R{value}",
                 OperandType.Immediate => value.ToString(),
                 OperandType.Label => $".L0x{label.GetHashCode():X}",
+                OperandType.String => string.Join(' ', Arguments),
                 _ => throw new ArgumentException("Operand must be register or immediate.", nameof(type))
             };
         }

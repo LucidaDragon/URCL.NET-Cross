@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using System;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
@@ -43,7 +44,9 @@ namespace UrclBot
         public BotTask(SocketMessage source, Attachment content)
         {
             Source = source;
-            Language = Path.GetExtension(content.Filename);
+            Language = Path.GetExtension(content.Filename).TrimStart('.');
+            OutputType = "emulate";
+            Tier = "any";
             Attachment = content;
             Name = content.Filename;
         }

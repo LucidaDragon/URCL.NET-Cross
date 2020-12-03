@@ -31,7 +31,7 @@ namespace URCL.NET
 
                 var configuration = builder.Configuration;
 
-                if (string.IsNullOrEmpty(configuration.Output)) configuration.Output = "output.txt";
+                if (string.IsNullOrEmpty(configuration.Output)) configuration.Output = "output.urcl";
 
                 //Load compiler modules.
                 var moduleLoader = new ModuleLoader();
@@ -54,7 +54,7 @@ namespace URCL.NET
 
                     if (inExt == "urcl")
                     {
-                        var instructions = Parser.Parse(File.ReadAllLines(file));
+                        var instructions = new Parser().Parse(LoadFile(file), LoadFile);
 
                         if (configuration.Emulate)
                         {
@@ -64,9 +64,9 @@ namespace URCL.NET
                         {
                             using var stream = new FileStream(configuration.Output, FileMode.Create, FileAccess.ReadWrite);
 
-                            if (!moduleLoader.ExecuteEmitter(outExt, stream.WriteByte, instructions))
+                            if (!moduleLoader.ExecuteEmitter(outExt, stream.WriteByte, instructions, Console.WriteLine))
                             {
-                                Console.WriteLine($"File \"{file}\" is not supported.");
+                                Console.WriteLine($"File \"{file}\" to output \"{configuration.Output}\" is not supported.");
                                 Environment.Exit(2);
                                 return;
                             }
@@ -87,7 +87,7 @@ namespace URCL.NET
                                 return;
                             }
 
-                            EmulatorHost.Emulator(configuration, Parser.Parse(lines), Console.WriteLine, () => { Console.ReadKey(true); }, true);
+                            EmulatorHost.Emulator(configuration, new Parser().Parse(lines, LoadFile), Console.WriteLine, () => { Console.ReadKey(true); }, true);
                         }
                         else
                         {
@@ -119,6 +119,18 @@ namespace URCL.NET
             catch (Exception ex)
             {
                 Console.WriteLine($"Fatal Error: {ex}");
+            }
+        }
+
+        private static IEnumerable<string> LoadFile(string file)
+        {
+            if (File.Exists(file))
+            {
+                return File.ReadAllLines(file);
+            }
+            else
+            {
+                throw new ParserError($"File \"{file}\" was not found.");
             }
         }
     }

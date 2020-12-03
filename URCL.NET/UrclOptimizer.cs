@@ -415,6 +415,23 @@ namespace URCL.NET
                 return result;
             }
 
+            [Targets(Operation.CMP)]
+            public static IEnumerable<UrclInstruction> CMP(UrclInstruction inst, ulong temporary)
+            {
+                return new[]
+                {
+                    new UrclInstruction(Operation.SUB, OperandType.Register, 0)
+                    {
+                        BType = inst.BType,
+                        B = inst.B,
+                        BLabel = inst.BLabel,
+                        CType = inst.CType,
+                        C = inst.C,
+                        CLabel = inst.CLabel
+                    }
+                };
+            }
+
             [Targets(Operation.BSL)]
             public static IEnumerable<UrclInstruction> BSL(UrclInstruction inst, ulong temporary)
             {
@@ -483,6 +500,40 @@ namespace URCL.NET
                 result.Add(new UrclInstruction(Operation.COMPILER_MARKLABEL, end));
 
                 return result;
+            }
+
+            [Targets(Operation.BEV)]
+            public static IEnumerable<UrclInstruction> BEV(UrclInstruction inst, ulong temporary)
+            {
+                return new[]
+                {
+                    new UrclInstruction(Operation.AND, OperandType.Register, 0)
+                    {
+                        BType = inst.BType,
+                        B = inst.B,
+                        BLabel = inst.BLabel,
+                        CType = OperandType.Immediate,
+                        C = 1
+                    },
+                    new UrclInstruction(Operation.BRZ, inst.ALabel)
+                };
+            }
+
+            [Targets(Operation.BOD)]
+            public static IEnumerable<UrclInstruction> BOD(UrclInstruction inst, ulong temporary)
+            {
+                return new[]
+                {
+                    new UrclInstruction(Operation.AND, OperandType.Register, 0)
+                    {
+                        BType = inst.BType,
+                        B = inst.B,
+                        BLabel = inst.BLabel,
+                        CType = OperandType.Immediate,
+                        C = 1
+                    },
+                    new UrclInstruction(Operation.BNZ, inst.ALabel)
+                };
             }
 
             [Targets(Operation.CAL)]

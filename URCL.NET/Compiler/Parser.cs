@@ -6,71 +6,147 @@ using System.Reflection;
 
 namespace URCL.NET.Compiler
 {
-    public static class Parser
+    public class Parser
     {
-        private static readonly string[] IgnoredOps = new[] { "BITS", "MINREG", "IMPORT" };
+        private static readonly string[] IgnoredOps = new[] { "MINREG" };
 
-        public static IEnumerable<UrclInstruction> Parse(IEnumerable<string> lines)
+        private readonly Dictionary<string, Label> Labels = new Dictionary<string, Label>();
+        private readonly Dictionary<string, ulong> ValueMacros = new Dictionary<string, ulong>();
+        private readonly Dictionary<string, IEnumerable<UrclInstruction>> CodeMacros = new Dictionary<string, IEnumerable<UrclInstruction>>();
+
+        public IEnumerable<UrclInstruction> Parse(IEnumerable<string> lines, Func<string, IEnumerable<string>> import, string sourceName = null)
         {
-            var labels = new Dictionary<string, Label>();
+            var lineLabels = new Label[lines.Count()];
+            var used = new bool[lineLabels.Length];
 
-            ulong ram = 1024;
-            ulong maxReg = 0;
             for (int parseIteration = 0; parseIteration < 3; parseIteration++)
             {
+                string macroName = null;
+                var macroBuffer = new List<UrclInstruction>();
+
                 int index = 0;
                 foreach (var line in lines)
                 {
                     var trimmed = line.Trim();
 
-                    if (trimmed.Length != 0 && !line.StartsWith("//"))
+                    if (!ParserIgnore(trimmed))
                     {
+                        if (parseIteration == 0) lineLabels[index] = new Label();
+
                         UrclInstruction result = null;
+                        IEnumerable<UrclInstruction> block = null;
 
                         try
                         {
-                            result = ParseInstruction(trimmed, parseIteration == 0, parseIteration > 0, labels);
-
-                            if (parseIteration == 1)
+                            result = ParseInstruction(trimmed, parseIteration == 0, parseIteration > 0, Labels, ValueMacros, CodeMacros, (rel) => 
                             {
-                                if (result.Operation == Operation.MINRAM && result.A > ram)
+                                var target = rel + index;
+
+                                if (target < 0 || target >= lineLabels.Length || lineLabels[target] is null)
                                 {
-                                    ram = result.A;
+                                    throw new ParserError("Relative address is out of bounds.");
                                 }
-                                else
+
+                                used[target] = true;
+                                return lineLabels[target];
+                            });
+
+                            if (parseIteration == 1 && result != null)
+                            {
+                                if (result.Operation == Operation.COMPILER_CODEMACRO_BEGIN)
                                 {
-                                    if (result.AType == OperandType.Register && result.A > maxReg) maxReg = result.A;
-                                    if (result.BType == OperandType.Register && result.B > maxReg) maxReg = result.B;
-                                    if (result.CType == OperandType.Register && result.C > maxReg) maxReg = result.C;
+                                    if (macroName != null) throw new ParserError("Macro was not finished before starting another macro.");
+                                    macroName = result.Arguments[0];
+                                    macroBuffer.Clear();
+                                    result = null;
+                                }
+                                else if (result.Operation == Operation.COMPILER_CODEMACRO_END)
+                                {
+                                    if (macroName == null) throw new ParserError("Missing beginning of macro.");
+                                    CodeMacros[macroName] = macroBuffer.ToArray();
+                                    macroName = null;
+                                    macroBuffer.Clear();
+                                    result = null;
+                                }
+                                else if (result.Operation == Operation.COMPILER_CODEMACRO_USE)
+                                {
+                                    if (macroName != null) throw new ParserError("Nested macros are not supported.");
+                                    if (CodeMacros.TryGetValue(result.Arguments[0], out IEnumerable<UrclInstruction> insts))
+                                    {
+                                        block = insts;
+                                        result = null;
+                                    }
+                                    else
+                                    {
+                                        throw new ParserError($"Undefined macro \"{result.Arguments[0]}\"");
+                                    }
+                                }
+                                else if (result.Operation == Operation.IMPORT)
+                                {
+                                    var name = result.Arguments[0];
+                                    block = Parse(import(string.Join(' ', result.Arguments)), import, sourceName).ToArray();
+                                    result = null;
+                                }
+                                else if (macroName != null)
+                                {
+                                    macroBuffer.Add(result);
+                                    result = null;
                                 }
 
                                 result = null;
                             }
-                            else if (result != null && result.Operation == Operation.MINRAM)
+                            else if (result != null)
                             {
-                                result = null;
+                                if (result.Operation == Operation.MINRAM || result.Operation == Operation.IMPORT)
+                                {
+                                    result = null;
+                                }
                             }
+                        }
+                        catch (TargetInvocationException ex)
+                        {
+                            throw new ParserError($"Error on line {index + 1}: \"{line}\" {ex.InnerException.Message}");
                         }
                         catch (ParserError ex)
                         {
                             throw new ParserError($"Error on line {index + 1}: \"{line}\" {ex.Message}");
                         }
 
+                        if ((result != null || block != null) && used[index])
+                        {
+                            yield return new UrclInstruction(Operation.COMPILER_MARKLABEL, lineLabels[Array.IndexOf(lineLabels, lineLabels[index])]);
+                        }
+
                         if (result != null) yield return result;
+                        if (block != null)
+                        {
+                            foreach (var inst in block)
+                            {
+                                yield return inst;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (parseIteration == 0)
+                        {
+                            if (index > 0)
+                            {
+                                lineLabels[index] = lineLabels[index - 1];
+                            }
+                            else
+                            {
+                                lineLabels[index] = null;
+                            }
+                        }
                     }
 
                     index++;
                 }
-
-                if (parseIteration == 1)
-                {
-                    yield return new UrclInstruction(Operation.COMPILER_MAXREG, OperandType.Immediate, maxReg);
-                    yield return new UrclInstruction(Operation.MINRAM, OperandType.Immediate, ram);
-                }
             }
         }
 
-        private static UrclInstruction ParseInstruction(string line, bool labelsOnly, bool instructionsOnly, Dictionary<string, Label> labels)
+        private static UrclInstruction ParseInstruction<TMacro>(string line, bool labelsOnly, bool instructionsOnly, Dictionary<string, Label> labels, Dictionary<string, ulong> valueMacros, Dictionary<string, TMacro> codeMacros, Func<long, Label> getRelative)
         {
             if (line.StartsWith('.'))
             {
@@ -95,7 +171,50 @@ namespace URCL.NET.Compiler
             }
             else if (line.StartsWith('@') && !labelsOnly)
             {
-                return new UrclInstruction(Operation.COMPILER_PRAGMA, line.Length > 1 ? line.Substring(1).Split(' ') : new string[0]);
+                var arguments = line.Length > 1 ? line.Substring(1).Split(' ') : new string[0];
+                string type = string.Empty;
+
+                if (arguments.Length > 0) type = arguments[0];
+
+                if (type.ToLower() == "macro")
+                {
+                    if (arguments.Length == 3)
+                    {
+                        var name = arguments[1];
+                        var value = arguments[2];
+
+                        if (name.ToLower() == "begin")
+                        {
+                            return new UrclInstruction(Operation.COMPILER_CODEMACRO_BEGIN, new[] { value });
+                        }
+                        else if (ulong.TryParse(value, out ulong v) ||
+                            (value.StartsWith("0x") && ulong.TryParse(value.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out v)) ||
+                            (value.StartsWith("0b") && TryParseBinary(value.Substring(2), out v)))
+                        {
+                            valueMacros[name] = v;
+                            return null;
+                        }
+                    }
+                    else if (arguments.Length == 2)
+                    {
+                        var tag = arguments[1];
+
+                        if (tag.ToLower() == "end")
+                        {
+                            return new UrclInstruction(Operation.COMPILER_CODEMACRO_END);
+                        }
+                        else
+                        {
+                            return new UrclInstruction(Operation.COMPILER_CODEMACRO_USE, new[] { tag });
+                        }
+                    }
+
+                    throw new ParserError("Invalid macro.");
+                }
+                else
+                {
+                    return new UrclInstruction(Operation.COMPILER_PRAGMA, arguments);
+                }
             }
             else if (!labelsOnly)
             {
@@ -150,10 +269,31 @@ namespace URCL.NET.Compiler
                             values[i] = v;
                             valueTypes[i] = OperandType.Immediate;
                         }
+                        else if (arg.StartsWith('+') && long.TryParse(arg.Substring(1), out long rel))
+                        {
+                            values[i] = getRelative(rel);
+                            valueTypes[i] = OperandType.Label;
+                        }
+                        else if (arg.StartsWith('-') && long.TryParse(arg, out rel))
+                        {
+                            values[i] = getRelative(rel);
+                            valueTypes[i] = OperandType.Label;
+                        }
                         else if (ulong.TryParse(arg, out v))
                         {
                             values[i] = v;
                             valueTypes[i] = OperandType.Immediate;
+                        }
+                        else if (valueMacros.TryGetValue(arg, out v))
+                        {
+                            values[i] = v;
+                            valueTypes[i] = OperandType.Immediate;
+                        }
+                        else if (allowedTypes.Length == 1 && allowedTypes[0] == OperandType.String)
+                        {
+                            values[i] = args.Skip(1).Select(str => str.Trim()).ToArray();
+                            valueTypes[i] = OperandType.String;
+                            if (allowedTypes[i].HasFlag(valueTypes[i])) break;
                         }
                         else
                         {
@@ -217,6 +357,12 @@ namespace URCL.NET.Compiler
             }
 
             return true;
+        }
+
+        private static bool ParserIgnore(string line)
+        {
+            line = line.Trim();
+            return line.Length == 0 || line.StartsWith("//");
         }
     }
 }

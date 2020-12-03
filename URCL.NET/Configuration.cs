@@ -46,6 +46,12 @@ namespace URCL.NET
         public string Output { get; set; } = null;
 
         /// <summary>
+        /// The minimum compatibility of the resulting URCL.
+        /// </summary>
+        [Config("The minimum compatibility of the resulting URCL.")]
+        public OperationType Compatibility { get; set; } = OperationType.CustomPragma;
+
+        /// <summary>
         /// Emulate input using the URCL VM.
         /// </summary>
         [Config("Emulate input using the URCL VM.")]
