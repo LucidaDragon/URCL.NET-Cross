@@ -54,7 +54,7 @@ namespace URCL.NET
 
         [Accepts(OperationType.Core, OperandType.Register, OperandType.Register)]
         MOV,
-        [Accepts(OperationType.Core, OperandType.Register, OperandType.Immediate)]
+        [Accepts(OperationType.Core, OperandType.Register, OperandType.Address)]
         IMM,
 
         [Accepts(OperationType.Core, OperandType.Register, OperandType.Any)]
