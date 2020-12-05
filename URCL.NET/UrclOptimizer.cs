@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace URCL.NET
@@ -15,6 +16,7 @@ namespace URCL.NET
                 CullCreateLabel = value;
                 CullComments = value;
                 CullPragmas = value;
+                CullUnusedLabels = value;
                 ReplaceImmZeroWithZeroRegister = value;
             }
         }
@@ -24,6 +26,7 @@ namespace URCL.NET
         public bool CullCreateLabel { get; set; } = false;
         public bool CullComments { get; set; } = false;
         public bool CullPragmas { get; set; } = false;
+        public bool CullUnusedLabels { get; set; } = false;
 
         public OperationType Compatibility { get; set; } = OperationType.CustomPragma;
 
@@ -32,6 +35,35 @@ namespace URCL.NET
         public UrclInstruction[] Optimize(UrclInstruction[] instructions)
         {
             var insts = new List<UrclInstruction>(instructions);
+
+            if (CullUnusedLabels)
+            {
+                var labels = insts
+                    .Where(i => i.Operation == Operation.COMPILER_MARKLABEL && i.ALabel != null)
+                    .Select(i => i.ALabel)
+                    .ToList();
+
+                foreach (var inst in insts)
+                {
+                    if (inst.Operation != Operation.COMPILER_MARKLABEL && inst.Operation != Operation.COMPILER_CREATELABEL)
+                    {
+                        if (inst.ALabel != null && labels.Contains(inst.ALabel)) labels.Remove(inst.ALabel);
+                        if (inst.BLabel != null && labels.Contains(inst.BLabel)) labels.Remove(inst.BLabel);
+                        if (inst.CLabel != null && labels.Contains(inst.CLabel)) labels.Remove(inst.CLabel);
+                    }
+                }
+
+                for (int i = 0; i < insts.Count; i++)
+                {
+                    var inst = insts[i];
+
+                    if (inst.Operation == Operation.COMPILER_MARKLABEL && labels.Contains(inst.ALabel))
+                    {
+                        insts.RemoveAt(i);
+                        i--;
+                    }
+                }
+            }
 
             for (int i = 0; i < insts.Count; i++)
             {
