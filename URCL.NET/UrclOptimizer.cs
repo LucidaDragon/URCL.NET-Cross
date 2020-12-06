@@ -90,7 +90,7 @@ namespace URCL.NET
                         {
                             RemoveInstructionRange(insts, i + 1, gap, CullComments);
 
-                            current.Operation = Operation.MOV;
+                            current.Operation = current.AType == OperandType.Register ? Operation.MOV : Operation.IMM;
 
                             current.BType = current.AType;
                             current.B = current.A;
