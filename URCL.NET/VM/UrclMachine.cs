@@ -214,7 +214,7 @@ namespace URCL.NET.VM
                     case Operation.SUB:
                         if (inst.IsRegister(Operand.A) && inst.Exists(Operand.B) && inst.Exists(Operand.C))
                         {
-                            SetRegister(inst[Operand.A], Flags = (ResolveValue(inst[Operand.B]) - ResolveValue(inst[Operand.C])));
+                            SetRegister(inst[Operand.A], Flags = (ResolveValue(inst[Operand.B]) + (~ResolveValue(inst[Operand.C]) + 1)));
                         }
                         else
                         {
