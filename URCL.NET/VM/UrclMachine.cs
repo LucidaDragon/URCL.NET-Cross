@@ -486,7 +486,7 @@ namespace URCL.NET.VM
                     case Operation.BRZ:
                         if (inst.Exists(Operand.A))
                         {
-                            if (Flags == 0) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if ((Flags & Host.BitMask) == 0) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -496,7 +496,7 @@ namespace URCL.NET.VM
                     case Operation.BNZ:
                         if (inst.Exists(Operand.A))
                         {
-                            if (Flags != 0) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if ((Flags & Host.BitMask) != 0) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -526,7 +526,7 @@ namespace URCL.NET.VM
                     case Operation.BRP:
                         if (inst.Exists(Operand.A))
                         {
-                            if (Flags <= long.MaxValue) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if ((Flags & Host.BitMask) <= (Host.BitMask >> 1)) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -536,7 +536,7 @@ namespace URCL.NET.VM
                     case Operation.BRN:
                         if (inst.Exists(Operand.A))
                         {
-                            if (Flags > long.MaxValue) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if ((Flags & Host.BitMask) > (Host.BitMask >> 1)) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -546,7 +546,7 @@ namespace URCL.NET.VM
                     case Operation.BEV:
                         if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
                         {
-                            if (ResolveValue(inst[Operand.B]) % 2 == 0) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if ((ResolveValue(inst[Operand.B]) & 1) == 0) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -556,7 +556,7 @@ namespace URCL.NET.VM
                     case Operation.BOD:
                         if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
                         {
-                            if (ResolveValue(inst[Operand.B]) % 2 == 1) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if ((ResolveValue(inst[Operand.B]) & 1) == 1) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
