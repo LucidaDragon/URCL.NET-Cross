@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace URCL.NET.VM
 {
@@ -107,6 +108,7 @@ namespace URCL.NET.VM
             return address;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Clock()
         {
             Ticks++;
@@ -173,6 +175,7 @@ namespace URCL.NET.VM
                 MaxStack = maxStack;
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Clock()
             {
                 Ticks++;
@@ -180,6 +183,7 @@ namespace URCL.NET.VM
                 return Execute(Decode(Fetch()));
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private bool Execute(ResolvedInstruction inst)
             {
                 switch (inst.Operation)
@@ -603,11 +607,13 @@ namespace URCL.NET.VM
                 return true;
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private void Invalid()
             {
                 throw new InvalidOperationException(this, InvalidOperationException.InvalidInstruction);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private UrclInstruction Fetch()
             {
                 var source = ExecuteFromROM ? Host.ROM : Host.RAM;
@@ -634,6 +640,7 @@ namespace URCL.NET.VM
                 }
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private ResolvedInstruction Decode(UrclInstruction inst)
             {
                 var argCount = 0;
@@ -677,6 +684,7 @@ namespace URCL.NET.VM
                 return new ResolvedInstruction(inst.Operation, args);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private ulong ResolveValue(object data)
             {
                 if (data is ulong v)
@@ -708,6 +716,7 @@ namespace URCL.NET.VM
                 }
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private ulong ResolveLabel(Label label)
             {
                 if (Host.RomLabels.TryGetValue(label, out ulong v))
@@ -724,6 +733,7 @@ namespace URCL.NET.VM
                 }
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private void SetRegister(object register, ulong value)
             {
                 if (register is Register reg)
