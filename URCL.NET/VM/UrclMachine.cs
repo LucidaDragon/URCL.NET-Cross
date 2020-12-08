@@ -59,6 +59,8 @@ namespace URCL.NET.VM
 
         private ulong LoadMemory(object[] memory, Dictionary<Label, ulong> labels, ulong address, IEnumerable data)
         {
+            ulong start = address;
+
             foreach (var item in data)
             {
                 if (item is Label l)
@@ -105,7 +107,77 @@ namespace URCL.NET.VM
                 }
             }
 
+            var length = address - start;
+
+            for (ulong i = 0; i < length; i++)
+            {
+                if (memory[i] is UrclInstruction inst)
+                {
+                    memory[i] = Decode(inst);
+                }
+            }
+
             return address;
+        }
+
+        private ResolvedInstruction Decode(UrclInstruction inst)
+        {
+            var argCount = 0;
+
+            if (inst.AType != OperandType.None) argCount++;
+            if (inst.BType != OperandType.None) argCount++;
+            if (inst.CType != OperandType.None) argCount++;
+
+            var args = new object[argCount];
+
+            if (argCount >= 1)
+            {
+                args[0] = inst.AType switch
+                {
+                    OperandType.Register => new Register(inst.A),
+                    OperandType.Immediate => inst.A,
+                    _ => ResolveLabel(inst.ALabel),
+                };
+            }
+
+            if (argCount >= 2)
+            {
+                args[1] = inst.BType switch
+                {
+                    OperandType.Register => new Register(inst.B),
+                    OperandType.Immediate => inst.B,
+                    _ => ResolveLabel(inst.BLabel),
+                };
+            }
+
+            if (argCount >= 3)
+            {
+                args[2] = inst.CType switch
+                {
+                    OperandType.Register => new Register(inst.C),
+                    OperandType.Immediate => inst.C,
+                    _ => ResolveLabel(inst.CLabel),
+                };
+            }
+
+            return new ResolvedInstruction(inst.Operation, args);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ulong ResolveLabel(Label label)
+        {
+            if (label != null && RomLabels.TryGetValue(label, out ulong v))
+            {
+                return v;
+            }
+            else if (label != null && RamLabels.TryGetValue(label, out v))
+            {
+                return v;
+            }
+            else
+            {
+                throw new InvalidOperationException(this, InvalidOperationException.UnresolvedLabel);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -156,16 +228,16 @@ namespace URCL.NET.VM
 
         public class Core
         {
-            public UrclMachine Host { get; set; }
-            public Stack<ulong> ValueStack { get; set; } = new Stack<ulong>();
-            public Stack<ulong> CallStack { get; set; } = new Stack<ulong>();
-            public ulong MaxStack { get; set; }
-            public ulong InstructionPointer { get; set; } = 0;
-            public ulong Ticks { get; set; } = 0;
-            public bool Halted { get; set; } = false;
-            public bool ExecuteFromROM { get; set; } = false;
-            public ulong[] Registers { get; set; }
-            public ulong Flags { get; set; } = 0;
+            public UrclMachine Host;
+            public Stack<ulong> ValueStack = new Stack<ulong>();
+            public Stack<ulong> CallStack = new Stack<ulong>();
+            public ulong MaxStack;
+            public ulong InstructionPointer = 0;
+            public ulong Ticks = 0;
+            public bool Halted = false;
+            public bool ExecuteFromROM = false;
+            public ulong[] Registers;
+            public ulong Flags = 0;
 
             public Core(UrclMachine host, bool executeFromROM, ulong registers, ulong maxStack)
             {
@@ -180,7 +252,7 @@ namespace URCL.NET.VM
             {
                 Ticks++;
 
-                return Execute(Decode(Fetch()));
+                return Execute(Fetch());
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -614,7 +686,7 @@ namespace URCL.NET.VM
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private UrclInstruction Fetch()
+            private ResolvedInstruction Fetch()
             {
                 var source = ExecuteFromROM ? Host.ROM : Host.RAM;
 
@@ -630,7 +702,7 @@ namespace URCL.NET.VM
 
                 var data = source[InstructionPointer];
 
-                if (data is UrclInstruction inst)
+                if (data is ResolvedInstruction inst)
                 {
                     return inst;
                 }
@@ -638,50 +710,6 @@ namespace URCL.NET.VM
                 {
                     throw new InvalidOperationException(this, InvalidOperationException.InvalidFetchData);
                 }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private ResolvedInstruction Decode(UrclInstruction inst)
-            {
-                var argCount = 0;
-
-                if (inst.AType != OperandType.None) argCount++;
-                if (inst.BType != OperandType.None) argCount++;
-                if (inst.CType != OperandType.None) argCount++;
-
-                var args = new object[argCount];
-
-                if (argCount >= 1)
-                {
-                    args[0] = inst.AType switch
-                    {
-                        OperandType.Register => new Register(inst.A),
-                        OperandType.Immediate => inst.A,
-                        _ => ResolveValue(inst.ALabel),
-                    };
-                }
-
-                if (argCount >= 2)
-                {
-                    args[1] = inst.BType switch
-                    {
-                        OperandType.Register => new Register(inst.B),
-                        OperandType.Immediate => inst.B,
-                        _ => ResolveValue(inst.BLabel),
-                    };
-                }
-
-                if (argCount >= 3)
-                {
-                    args[2] = inst.CType switch
-                    {
-                        OperandType.Register => new Register(inst.C),
-                        OperandType.Immediate => inst.C,
-                        _ => ResolveValue(inst.CLabel),
-                    };
-                }
-
-                return new ResolvedInstruction(inst.Operation, args);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -693,7 +721,7 @@ namespace URCL.NET.VM
                 }
                 else if (data is Label l)
                 {
-                    return ResolveLabel(l);
+                    return Host.ResolveLabel(l);
                 }
                 else if (data is Register r)
                 {
@@ -717,23 +745,6 @@ namespace URCL.NET.VM
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private ulong ResolveLabel(Label label)
-            {
-                if (Host.RomLabels.TryGetValue(label, out ulong v))
-                {
-                    return v;
-                }
-                else if (Host.RamLabels.TryGetValue(label, out v))
-                {
-                    return v;
-                }
-                else
-                {
-                    throw new InvalidOperationException(this, InvalidOperationException.UnresolvedLabel);
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private void SetRegister(object register, ulong value)
             {
                 if (register is Register reg)
@@ -752,54 +763,54 @@ namespace URCL.NET.VM
                     throw new InvalidOperationException(this, InvalidOperationException.InvalidRegister);
                 }
             }
+        }
 
-            private struct ResolvedInstruction
+        private struct ResolvedInstruction
+        {
+            public object this[Operand operand]
             {
-                public object this[Operand operand]
-                {
-                    get => Values[((int)operand) - 1];
-                }
-
-                public Operation Operation;
-                public object[] Values;
-
-                public ResolvedInstruction(Operation op, object[] values)
-                {
-                    Operation = op;
-                    Values = values;
-                }
-
-                public bool Exists(Operand operand)
-                {
-                    return ((int)operand) <= Values.Length;
-                }
-
-                public bool IsRegister(Operand operand)
-                {
-                    return Exists(operand) && Values[((int)operand) - 1] is Register;
-                }
-
-                public bool IsImmediate(Operand operand)
-                {
-                    return Exists(operand) && !IsRegister(operand);
-                }
+                get => Values[((int)operand) - 1];
             }
 
-            private enum Operand
+            public Operation Operation;
+            public object[] Values;
+
+            public ResolvedInstruction(Operation op, object[] values)
             {
-                A = 1,
-                B = 2,
-                C = 3
+                Operation = op;
+                Values = values;
             }
 
-            private struct Register
+            public bool Exists(Operand operand)
             {
-                public ulong Index;
+                return ((int)operand) <= Values.Length;
+            }
 
-                public Register(ulong index)
-                {
-                    Index = index;
-                }
+            public bool IsRegister(Operand operand)
+            {
+                return Exists(operand) && Values[((int)operand) - 1] is Register;
+            }
+
+            public bool IsImmediate(Operand operand)
+            {
+                return Exists(operand) && !IsRegister(operand);
+            }
+        }
+
+        private enum Operand
+        {
+            A = 1,
+            B = 2,
+            C = 3
+        }
+
+        private struct Register
+        {
+            public ulong Index;
+
+            public Register(ulong index)
+            {
+                Index = index;
             }
         }
 
