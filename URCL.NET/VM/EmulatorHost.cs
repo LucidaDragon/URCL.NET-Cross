@@ -68,6 +68,8 @@ namespace URCL.NET.VM
 
                     if ((brk && !configuration.DisableBreak) || configuration.StepThrough)
                     {
+                        output(string.Empty);
+
                         if (!configuration.StepThrough)
                         {
                             output("Breakpoint hit! System suspended.");
@@ -82,11 +84,14 @@ namespace URCL.NET.VM
                 }
                 catch (UrclMachine.InvalidOperationException ex)
                 {
+                    output(string.Empty);
                     output($"***Fault! {ex.Message}***");
                     fault = true;
                     break;
                 }
             }
+
+            output(string.Empty);
 
             if (!machine.Halted && !fault) output("Maximum time for execution was exceeded!");
 

@@ -45,6 +45,7 @@ namespace URCL.NET.VM
             BitMask = bitmask;
 
             IoBus = ioBus is null ? new DefaultIO() : ioBus;
+            IoBus.Init(this);
         }
 
         public ulong LoadRAM(ulong address, IEnumerable data)
@@ -835,6 +836,11 @@ namespace URCL.NET.VM
             public abstract ulong this[ulong port] { get; set; }
 
             public UrclMachine Host { get; set; }
+
+            public virtual void Init(UrclMachine host)
+            {
+                Host = host;
+            }
 
             protected void UnsupportedPort()
             {
