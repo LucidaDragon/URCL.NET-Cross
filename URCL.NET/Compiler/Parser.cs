@@ -259,16 +259,6 @@ namespace URCL.NET.Compiler
                                 throw new ParserError($"Invalid register \"{arg}\".");
                             }
                         }
-                        else if (arg.StartsWith("0x") && ulong.TryParse(arg[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out v))
-                        {
-                            values[i] = v;
-                            valueTypes[i] = OperandType.Immediate;
-                        }
-                        else if (arg.StartsWith("0b") && TryParseBinary(arg[2..], out v))
-                        {
-                            values[i] = v;
-                            valueTypes[i] = OperandType.Immediate;
-                        }
                         else if (arg.StartsWith('+') && long.TryParse(arg.Substring(1), out long rel))
                         {
                             values[i] = getRelative(rel);
@@ -279,7 +269,7 @@ namespace URCL.NET.Compiler
                             values[i] = getRelative(rel);
                             valueTypes[i] = OperandType.Label;
                         }
-                        else if (ulong.TryParse(arg, out v))
+                        else if (TryParseValue(arg, out v))
                         {
                             values[i] = v;
                             valueTypes[i] = OperandType.Immediate;
@@ -334,6 +324,26 @@ namespace URCL.NET.Compiler
             if (attrib is null) return new OperandType[0];
 
             return attrib.Types;
+        }
+
+        public static bool TryParseValue(string str, out ulong result)
+        {
+            if (str.StartsWith("0x") && ulong.TryParse(str[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out result))
+            {
+                return true;
+            }
+            else if (str.StartsWith("0b") && TryParseBinary(str[2..], out result))
+            {
+                return true;
+            }
+            else if (ulong.TryParse(str, out result))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         private static bool TryParseBinary(string str, out ulong result)

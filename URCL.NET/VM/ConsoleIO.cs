@@ -119,6 +119,12 @@ namespace URCL.NET.VM
             }
         }
 
+        public override void Init(UrclMachine host)
+        {
+            base.Init(host);
+            Console.Clear();
+        }
+
         private void DrawPixel()
         {
             try
@@ -130,6 +136,9 @@ namespace URCL.NET.VM
                 Console.BackgroundColor = Color;
                 Console.Write(' ');
                 Console.BackgroundColor = orig;
+
+                Console.CursorLeft = 0;
+                Console.CursorTop = Console.WindowHeight - 1;
             }
             catch (Exception)
             {

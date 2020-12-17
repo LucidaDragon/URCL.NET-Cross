@@ -38,7 +38,7 @@ namespace UrclBot
                 while (true)
                 {
                     output($"{DateTime.Now} Idle");
-                    await Client.SetGameAsync("on a CPU.", null, ActivityType.Playing);
+                    await Client.SetGameAsync("Conway's Game of Life.", null, ActivityType.Playing);
                     await Client.SetStatusAsync(UserStatus.Idle);
 
                     Sleep.WaitOne();

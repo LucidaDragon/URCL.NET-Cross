@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using URCL.NET.Compiler;
 
 namespace URCL.NET.VM
 {
@@ -8,6 +9,7 @@ namespace URCL.NET.VM
     {
         public static void Emulator(Configuration configuration, IEnumerable<UrclInstruction> instructions, Action<string> output, Action wait, bool allowConsole)
         {
+            ulong startAddress = 0;
             var wordSize = configuration.WordSize;
             instructions = instructions.Select(inst => 
             {
@@ -18,6 +20,27 @@ namespace URCL.NET.VM
                         wordSize = (ushort)inst.A;
                     }
                 }
+                else if (inst.Operation == Operation.COMPILER_PRAGMA && inst.Arguments != null)
+                {
+                    if (inst.Arguments.Length == 2)
+                    {
+                        var operand = inst.Arguments[1].ToLower();
+
+                        switch (inst.Arguments[0].ToLower())
+                        {
+                            case "org":
+                                if (Parser.TryParseValue(operand, out ulong v))
+                                {
+                                    startAddress = v;
+                                }
+                                else
+                                {
+                                    throw new ParserError($"ORG pragma is not valid with parameter \"{operand}\".");
+                                }
+                                break;
+                        }
+                    }
+                }
 
                 return inst;
             }).Where(inst => inst.Operation != Operation.BITS).Append(new UrclInstruction(Operation.HLT)).ToArray();
@@ -26,11 +49,11 @@ namespace URCL.NET.VM
 
             if (configuration.ExecuteOnROM)
             {
-                machine.LoadROM(0, instructions);
+                machine.LoadROM(startAddress, instructions);
             }
             else
             {
-                machine.LoadRAM(0, instructions);
+                machine.LoadRAM(startAddress, instructions);
             }
 
             var start = Environment.TickCount64;
@@ -45,6 +68,8 @@ namespace URCL.NET.VM
 
                     if ((brk && !configuration.DisableBreak) || configuration.StepThrough)
                     {
+                        output(string.Empty);
+
                         if (!configuration.StepThrough)
                         {
                             output("Breakpoint hit! System suspended.");
@@ -59,11 +84,14 @@ namespace URCL.NET.VM
                 }
                 catch (UrclMachine.InvalidOperationException ex)
                 {
+                    output(string.Empty);
                     output($"***Fault! {ex.Message}***");
                     fault = true;
                     break;
                 }
             }
+
+            output(string.Empty);
 
             if (!machine.Halted && !fault) output("Maximum time for execution was exceeded!");
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace URCL.NET.VM
 {
@@ -44,6 +45,7 @@ namespace URCL.NET.VM
             BitMask = bitmask;
 
             IoBus = ioBus is null ? new DefaultIO() : ioBus;
+            IoBus.Init(this);
         }
 
         public ulong LoadRAM(ulong address, IEnumerable data)
@@ -58,6 +60,8 @@ namespace URCL.NET.VM
 
         private ulong LoadMemory(object[] memory, Dictionary<Label, ulong> labels, ulong address, IEnumerable data)
         {
+            ulong start = address;
+
             foreach (var item in data)
             {
                 if (item is Label l)
@@ -104,9 +108,80 @@ namespace URCL.NET.VM
                 }
             }
 
+            var length = address - start;
+
+            for (ulong i = 0; i < length; i++)
+            {
+                if (memory[i] is UrclInstruction inst)
+                {
+                    memory[i] = Decode(inst);
+                }
+            }
+
             return address;
         }
 
+        private ResolvedInstruction Decode(UrclInstruction inst)
+        {
+            var argCount = 0;
+
+            if (inst.AType != OperandType.None) argCount++;
+            if (inst.BType != OperandType.None) argCount++;
+            if (inst.CType != OperandType.None) argCount++;
+
+            var args = new object[argCount];
+
+            if (argCount >= 1)
+            {
+                args[0] = inst.AType switch
+                {
+                    OperandType.Register => new Register(inst.A),
+                    OperandType.Immediate => inst.A,
+                    _ => ResolveLabel(inst.ALabel),
+                };
+            }
+
+            if (argCount >= 2)
+            {
+                args[1] = inst.BType switch
+                {
+                    OperandType.Register => new Register(inst.B),
+                    OperandType.Immediate => inst.B,
+                    _ => ResolveLabel(inst.BLabel),
+                };
+            }
+
+            if (argCount >= 3)
+            {
+                args[2] = inst.CType switch
+                {
+                    OperandType.Register => new Register(inst.C),
+                    OperandType.Immediate => inst.C,
+                    _ => ResolveLabel(inst.CLabel),
+                };
+            }
+
+            return new ResolvedInstruction(inst.Operation, args);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ulong ResolveLabel(Label label)
+        {
+            if (label != null && RomLabels.TryGetValue(label, out ulong v))
+            {
+                return v;
+            }
+            else if (label != null && RamLabels.TryGetValue(label, out v))
+            {
+                return v;
+            }
+            else
+            {
+                throw new InvalidOperationException(this, InvalidOperationException.UnresolvedLabel);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Clock()
         {
             Ticks++;
@@ -154,16 +229,16 @@ namespace URCL.NET.VM
 
         public class Core
         {
-            public UrclMachine Host { get; set; }
-            public Stack<ulong> ValueStack { get; set; } = new Stack<ulong>();
-            public Stack<ulong> CallStack { get; set; } = new Stack<ulong>();
-            public ulong MaxStack { get; set; }
-            public ulong InstructionPointer { get; set; } = 0;
-            public ulong Ticks { get; set; } = 0;
-            public bool Halted { get; set; } = false;
-            public bool ExecuteFromROM { get; set; } = false;
-            public ulong[] Registers { get; set; }
-            public ulong Flags { get; set; } = 0;
+            public UrclMachine Host;
+            public Stack<ulong> ValueStack = new Stack<ulong>();
+            public Stack<ulong> CallStack = new Stack<ulong>();
+            public ulong MaxStack;
+            public ulong InstructionPointer = 0;
+            public ulong Ticks = 0;
+            public bool Halted = false;
+            public bool ExecuteFromROM = false;
+            public ulong[] Registers;
+            public ulong Flags = 0;
 
             public Core(UrclMachine host, bool executeFromROM, ulong registers, ulong maxStack)
             {
@@ -173,13 +248,15 @@ namespace URCL.NET.VM
                 MaxStack = maxStack;
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Clock()
             {
                 Ticks++;
 
-                return Execute(Decode(Fetch()));
+                return Execute(Fetch());
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private bool Execute(ResolvedInstruction inst)
             {
                 switch (inst.Operation)
@@ -214,7 +291,7 @@ namespace URCL.NET.VM
                     case Operation.SUB:
                         if (inst.IsRegister(Operand.A) && inst.Exists(Operand.B) && inst.Exists(Operand.C))
                         {
-                            SetRegister(inst[Operand.A], Flags = (ResolveValue(inst[Operand.B]) - ResolveValue(inst[Operand.C])));
+                            SetRegister(inst[Operand.A], Flags = (ResolveValue(inst[Operand.B]) + (~ResolveValue(inst[Operand.C]) + 1)));
                         }
                         else
                         {
@@ -486,7 +563,7 @@ namespace URCL.NET.VM
                     case Operation.BRZ:
                         if (inst.Exists(Operand.A))
                         {
-                            if (Flags == 0) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if ((Flags & Host.BitMask) == 0) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -496,7 +573,7 @@ namespace URCL.NET.VM
                     case Operation.BNZ:
                         if (inst.Exists(Operand.A))
                         {
-                            if (Flags != 0) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if ((Flags & Host.BitMask) != 0) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -526,7 +603,7 @@ namespace URCL.NET.VM
                     case Operation.BRP:
                         if (inst.Exists(Operand.A))
                         {
-                            if (Flags <= long.MaxValue) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if ((Flags & Host.BitMask) <= (Host.BitMask >> 1)) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -536,7 +613,7 @@ namespace URCL.NET.VM
                     case Operation.BRN:
                         if (inst.Exists(Operand.A))
                         {
-                            if (Flags > long.MaxValue) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if ((Flags & Host.BitMask) > (Host.BitMask >> 1)) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -546,7 +623,7 @@ namespace URCL.NET.VM
                     case Operation.BEV:
                         if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
                         {
-                            if (ResolveValue(inst[Operand.B]) % 2 == 0) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if ((ResolveValue(inst[Operand.B]) & 1) == 0) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -556,7 +633,7 @@ namespace URCL.NET.VM
                     case Operation.BOD:
                         if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
                         {
-                            if (ResolveValue(inst[Operand.B]) % 2 == 1) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
+                            if ((ResolveValue(inst[Operand.B]) & 1) == 1) InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {
@@ -603,12 +680,14 @@ namespace URCL.NET.VM
                 return true;
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private void Invalid()
             {
                 throw new InvalidOperationException(this, InvalidOperationException.InvalidInstruction);
             }
 
-            private UrclInstruction Fetch()
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private ResolvedInstruction Fetch()
             {
                 var source = ExecuteFromROM ? Host.ROM : Host.RAM;
 
@@ -624,7 +703,7 @@ namespace URCL.NET.VM
 
                 var data = source[InstructionPointer];
 
-                if (data is UrclInstruction inst)
+                if (data is ResolvedInstruction inst)
                 {
                     return inst;
                 }
@@ -634,49 +713,7 @@ namespace URCL.NET.VM
                 }
             }
 
-            private ResolvedInstruction Decode(UrclInstruction inst)
-            {
-                var argCount = 0;
-
-                if (inst.AType != OperandType.None) argCount++;
-                if (inst.BType != OperandType.None) argCount++;
-                if (inst.CType != OperandType.None) argCount++;
-
-                var args = new object[argCount];
-
-                if (argCount >= 1)
-                {
-                    args[0] = inst.AType switch
-                    {
-                        OperandType.Register => new Register(inst.A),
-                        OperandType.Immediate => inst.A,
-                        _ => ResolveValue(inst.ALabel),
-                    };
-                }
-
-                if (argCount >= 2)
-                {
-                    args[1] = inst.BType switch
-                    {
-                        OperandType.Register => new Register(inst.B),
-                        OperandType.Immediate => inst.B,
-                        _ => ResolveValue(inst.BLabel),
-                    };
-                }
-
-                if (argCount >= 3)
-                {
-                    args[2] = inst.CType switch
-                    {
-                        OperandType.Register => new Register(inst.C),
-                        OperandType.Immediate => inst.C,
-                        _ => ResolveValue(inst.CLabel),
-                    };
-                }
-
-                return new ResolvedInstruction(inst.Operation, args);
-            }
-
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private ulong ResolveValue(object data)
             {
                 if (data is ulong v)
@@ -685,7 +722,7 @@ namespace URCL.NET.VM
                 }
                 else if (data is Label l)
                 {
-                    return ResolveLabel(l);
+                    return Host.ResolveLabel(l);
                 }
                 else if (data is Register r)
                 {
@@ -708,22 +745,7 @@ namespace URCL.NET.VM
                 }
             }
 
-            private ulong ResolveLabel(Label label)
-            {
-                if (Host.RomLabels.TryGetValue(label, out ulong v))
-                {
-                    return v;
-                }
-                else if (Host.RamLabels.TryGetValue(label, out v))
-                {
-                    return v;
-                }
-                else
-                {
-                    throw new InvalidOperationException(this, InvalidOperationException.UnresolvedLabel);
-                }
-            }
-
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private void SetRegister(object register, ulong value)
             {
                 if (register is Register reg)
@@ -742,54 +764,54 @@ namespace URCL.NET.VM
                     throw new InvalidOperationException(this, InvalidOperationException.InvalidRegister);
                 }
             }
+        }
 
-            private struct ResolvedInstruction
+        private struct ResolvedInstruction
+        {
+            public object this[Operand operand]
             {
-                public object this[Operand operand]
-                {
-                    get => Values[((int)operand) - 1];
-                }
-
-                public Operation Operation;
-                public object[] Values;
-
-                public ResolvedInstruction(Operation op, object[] values)
-                {
-                    Operation = op;
-                    Values = values;
-                }
-
-                public bool Exists(Operand operand)
-                {
-                    return ((int)operand) <= Values.Length;
-                }
-
-                public bool IsRegister(Operand operand)
-                {
-                    return Exists(operand) && Values[((int)operand) - 1] is Register;
-                }
-
-                public bool IsImmediate(Operand operand)
-                {
-                    return Exists(operand) && !IsRegister(operand);
-                }
+                get => Values[((int)operand) - 1];
             }
 
-            private enum Operand
+            public Operation Operation;
+            public object[] Values;
+
+            public ResolvedInstruction(Operation op, object[] values)
             {
-                A = 1,
-                B = 2,
-                C = 3
+                Operation = op;
+                Values = values;
             }
 
-            private struct Register
+            public bool Exists(Operand operand)
             {
-                public ulong Index;
+                return ((int)operand) <= Values.Length;
+            }
 
-                public Register(ulong index)
-                {
-                    Index = index;
-                }
+            public bool IsRegister(Operand operand)
+            {
+                return Exists(operand) && Values[((int)operand) - 1] is Register;
+            }
+
+            public bool IsImmediate(Operand operand)
+            {
+                return Exists(operand) && !IsRegister(operand);
+            }
+        }
+
+        private enum Operand
+        {
+            A = 1,
+            B = 2,
+            C = 3
+        }
+
+        private struct Register
+        {
+            public ulong Index;
+
+            public Register(ulong index)
+            {
+                Index = index;
             }
         }
 
@@ -814,6 +836,11 @@ namespace URCL.NET.VM
             public abstract ulong this[ulong port] { get; set; }
 
             public UrclMachine Host { get; set; }
+
+            public virtual void Init(UrclMachine host)
+            {
+                Host = host;
+            }
 
             protected void UnsupportedPort()
             {
