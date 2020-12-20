@@ -15,23 +15,63 @@ namespace SpeedAsm
 
         private static readonly string Assignment = Operation.Set.GetString();
 
+        public ICollection<ILinePreparser> LinePreparsers { get; } = new List<ILinePreparser>();
+
         private readonly Dictionary<string, ulong> Labels = new Dictionary<string, ulong>();
         private readonly Dictionary<string, ulong> Variables = new Dictionary<string, ulong>();
         private ulong NextLabel = 0;
         private ulong NextVariable = 0;
 
-        /// <summary>
-        /// Parses and generates an instruction for the specified line.
-        /// </summary>
-        /// <param name="line">The line to parse.</param>
-        /// <exception cref="CompileError">The specified line was invalid.</exception>
-        /// <returns>The instruction that was generated, or null if the line was a comment or whitespace.</returns>
-        public Instruction? Parse(string line)
+        public IEnumerable<Instruction> Parse(IEnumerable<string> lines)
         {
-            return Parse(Lex(line));
+            foreach (var parser in LinePreparsers)
+            {
+                parser.Begin();
+            }
+
+            var lineIndex = 0;
+
+            foreach (var line in lines)
+            {
+                var generated = Parse(line);
+
+                foreach (var inst in generated)
+                {
+                    inst.Line = lineIndex;
+
+                    foreach (var parser in LinePreparsers)
+                    {
+                        parser.Generated(inst);
+                    }
+
+                    yield return inst;
+                }
+
+                lineIndex++;
+            }
+
+            foreach (var parser in LinePreparsers)
+            {
+                parser.End();
+            }
         }
 
-        private Instruction? Parse(LexResult lex)
+        private IEnumerable<Instruction> Parse(string line)
+        {
+            foreach (var parser in LinePreparsers)
+            {
+                if (parser.TryParse(line, out IEnumerable<Instruction> result))
+                {
+                    return result;
+                }
+            }
+
+            var inst = Parse(Lex(line));
+
+            return inst != null ? new[] { inst } : new Instruction[0];
+        }
+
+        private Instruction Parse(LexResult lex)
         {
             if (lex.Valid)
             {

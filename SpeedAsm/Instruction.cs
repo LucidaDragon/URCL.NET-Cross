@@ -1,7 +1,8 @@
 ﻿namespace SpeedAsm
 {
-    public struct Instruction
+    public class Instruction
     {
+        public int Line;
         public Operation Operation;
         public Operand Destination;
         public Operand Source;
@@ -9,6 +10,7 @@
 
         public Instruction(Operation op)
         {
+            Line = -1;
             Operation = op;
             Destination = default;
             Source = default;

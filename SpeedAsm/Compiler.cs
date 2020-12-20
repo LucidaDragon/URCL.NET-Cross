@@ -20,16 +20,11 @@ namespace SpeedAsm
             {
                 var parser = new Parser();
 
-                foreach (var line in lines)
+                foreach (var inst in parser.Parse(lines))
                 {
-                    var inst = parser.Parse(line);
+                    lineIndex = inst.Line;
 
-                    if (inst.HasValue)
-                    {
-                        emitter.Emit(inst.Value);
-                    }
-
-                    lineIndex++;
+                    emitter.Emit(inst);
                 }
 
                 lineIndex = -1;
