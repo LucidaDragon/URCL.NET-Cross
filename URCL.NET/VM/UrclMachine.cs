@@ -469,7 +469,7 @@ namespace URCL.NET.VM
                             Invalid();
                         }
                         break;
-                    case Operation.LOAD:
+                    case Operation.LOD:
                         if (inst.IsRegister(Operand.A) && inst.Exists(Operand.B))
                         {
                             var address = ResolveValue(inst[Operand.B]);
@@ -486,7 +486,7 @@ namespace URCL.NET.VM
                             Invalid();
                         }
                         break;
-                    case Operation.STORE:
+                    case Operation.STR:
                         if (inst.Exists(Operand.A) && inst.Exists(Operand.B))
                         {
                             var address = ResolveValue(inst[Operand.A]);
@@ -645,7 +645,7 @@ namespace URCL.NET.VM
                         {
                             CallStack.Push(InstructionPointer);
                             if ((ulong)CallStack.Count > MaxStack) throw new InvalidOperationException(this, InvalidOperationException.StackOverflow);
-                            InstructionPointer = ResolveValue(inst[Operand.A]);
+                            InstructionPointer = ResolveValue(inst[Operand.A]) - 1;
                         }
                         else
                         {

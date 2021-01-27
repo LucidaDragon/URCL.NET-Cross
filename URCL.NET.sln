@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpeedAsm", "SpeedAsm\SpeedA
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UrclBot", "UrclBot\UrclBot.csproj", "{95E91D23-3388-49EC-A630-3F37B9A244B2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestCode", "TestCode\TestCode.csproj", "{703BBA23-04A9-4EA3-866F-BC06FCF40AFB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{95E91D23-3388-49EC-A630-3F37B9A244B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{95E91D23-3388-49EC-A630-3F37B9A244B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{95E91D23-3388-49EC-A630-3F37B9A244B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{703BBA23-04A9-4EA3-866F-BC06FCF40AFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{703BBA23-04A9-4EA3-866F-BC06FCF40AFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{703BBA23-04A9-4EA3-866F-BC06FCF40AFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{703BBA23-04A9-4EA3-866F-BC06FCF40AFB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -188,7 +188,7 @@ namespace URCL.NET.Platform8086
                 case Operation.IMM:
                     Set(emit, GetA(instruction), GetB(instruction));
                     break;
-                case Operation.LOAD:
+                case Operation.LOD:
                     {
                         Set(emit, BX, GetB(instruction));
                         emit(new X86Inst("shl", BX, Operand.Imm("1")));
@@ -196,7 +196,7 @@ namespace URCL.NET.Platform8086
                         Set(emit, GetA(instruction), AX);
                     }
                     break;
-                case Operation.STORE:
+                case Operation.STR:
                     {
                         Set(emit, AX, GetB(instruction));
                         Set(emit, BX, GetA(instruction));

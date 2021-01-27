@@ -58,9 +58,9 @@ namespace URCL.NET
         IMM,
 
         [Accepts(OperationType.Core, OperandType.Register, OperandType.Any)]
-        LOAD,
-        [Accepts(OperationType.Core, OperandType.Any, OperandType.Register)]
-        STORE,
+        LOD,
+        [Accepts(OperationType.Core, OperandType.Any, OperandType.Any)]
+        STR,
 
         [Accepts(OperationType.Basic, OperandType.Register, OperandType.Immediate)]
         IN,

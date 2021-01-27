@@ -210,13 +210,13 @@ namespace URCL.NET.PlatformIL
                         PushOperand(il, 1, inst);
                         PopOperand(il, 0, inst);
                         break;
-                    case Operation.LOAD:
+                    case Operation.LOD:
                         il.Emit(OpCodes.Ldsfld, Memory);
                         PushOperand(il, 1, inst);
                         il.Emit(OpCodes.Ldelem, typeof(uint));
                         PopOperand(il, 0, inst);
                         break;
-                    case Operation.STORE:
+                    case Operation.STR:
                         il.Emit(OpCodes.Ldsfld, Memory);
                         PushOperand(il, 0, inst);
                         PushOperand(il, 1, inst);

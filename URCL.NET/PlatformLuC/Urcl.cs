@@ -130,7 +130,7 @@ namespace URCL.NET.PlatformLuC.Emitters
             Emit(new UrclInstruction(Operation.COMPILER_CREATELABEL, returnPoint));
             Emit(new UrclInstruction(Operation.POP, OperandType.Register, OperandA));
             Emit(new UrclInstruction(Operation.INC, OperandType.Register, CallStack, OperandType.Register, CallStack));
-            Emit(new UrclInstruction(Operation.STORE, OperandType.Register, CallStack, returnPoint));
+            Emit(new UrclInstruction(Operation.STR, OperandType.Register, CallStack, returnPoint));
             Emit(new UrclInstruction(Operation.BRA, OperandType.Register, OperandA));
             Emit(new UrclInstruction(Operation.COMPILER_MARKLABEL, returnPoint));
         }
@@ -180,10 +180,10 @@ namespace URCL.NET.PlatformLuC.Emitters
         {
             Emit(new UrclInstruction(Operation.COMPILER_COMMENT, new[] { "Load Local" }));
 
-            Emit(new UrclInstruction(Operation.LOAD, OperandType.Register, OperandA, OperandType.Register, CallStack));
+            Emit(new UrclInstruction(Operation.LOD, OperandType.Register, OperandA, OperandType.Register, CallStack));
             Emit(new UrclInstruction(Operation.SUB, OperandType.Register, OperandA, OperandType.Register, CallStack, OperandType.Register, OperandA));
             Emit(new UrclInstruction(Operation.ADD, OperandType.Register, OperandA, OperandType.Register, OperandA, OperandType.Immediate, local));
-            Emit(new UrclInstruction(Operation.LOAD, OperandType.Register, OperandB, OperandType.Register, OperandA));
+            Emit(new UrclInstruction(Operation.LOD, OperandType.Register, OperandB, OperandType.Register, OperandA));
             Emit(new UrclInstruction(Operation.PSH, OperandType.Register, OperandB));
         }
 
@@ -248,10 +248,10 @@ namespace URCL.NET.PlatformLuC.Emitters
             Emit(new UrclInstruction(Operation.COMPILER_COMMENT, new[] { "Store Local" }));
 
             Emit(new UrclInstruction(Operation.POP, OperandType.Register, OperandB));
-            Emit(new UrclInstruction(Operation.LOAD, OperandType.Register, OperandA, OperandType.Register, CallStack));
+            Emit(new UrclInstruction(Operation.LOD, OperandType.Register, OperandA, OperandType.Register, CallStack));
             Emit(new UrclInstruction(Operation.SUB, OperandType.Register, OperandA, OperandType.Register, CallStack, OperandType.Register, OperandA));
             Emit(new UrclInstruction(Operation.ADD, OperandType.Register, OperandA, OperandType.Register, OperandA, OperandType.Immediate, local));
-            Emit(new UrclInstruction(Operation.STORE, OperandType.Register, OperandA, OperandType.Register, OperandB));
+            Emit(new UrclInstruction(Operation.STR, OperandType.Register, OperandA, OperandType.Register, OperandB));
         }
 
         public void SubtractInt()
@@ -288,7 +288,7 @@ namespace URCL.NET.PlatformLuC.Emitters
             {
                 Emit(new UrclInstruction(Operation.ADD, OperandType.Register, CallStack, OperandType.Register, CallStack, OperandType.Immediate, f.FrameSize + 1));
 
-                Emit(new UrclInstruction(Operation.STORE, OperandType.Register, CallStack, OperandType.Immediate, f.FrameSize));
+                Emit(new UrclInstruction(Operation.STR, OperandType.Register, CallStack, OperandType.Immediate, f.FrameSize));
             }
         }
 
@@ -309,7 +309,7 @@ namespace URCL.NET.PlatformLuC.Emitters
 
             Emit(new UrclInstruction(Operation.INC, OperandType.Register, OperandA, OperandType.Register, CallStack));
 
-            Emit(new UrclInstruction(Operation.LOAD, OperandType.Register, OperandB, OperandType.Register, OperandA));
+            Emit(new UrclInstruction(Operation.LOD, OperandType.Register, OperandB, OperandType.Register, OperandA));
 
             Emit(new UrclInstruction(Operation.BRA, OperandType.Register, OperandB));
 

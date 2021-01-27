@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -241,7 +242,7 @@ namespace URCL.NET
                         {
                             if (parameters[1].ParameterType == typeof(IEnumerable<UrclInstruction>))
                             {
-                                method.Invoke(target, new object[] { emitter, instructions });
+                                method.Invoke(target, new object[] { emitter, instructions.ToArray() });
                             }
                             else
                             {

@@ -262,6 +262,23 @@ namespace URCL.NET
             if (types.Length >= 4) throw new Exception($"Instructions with {types.Length} operands are not supported.");
         }
 
+        public UrclInstruction Clone()
+        {
+            return new UrclInstruction(Operation)
+            {
+                AType = AType,
+                BType = BType,
+                CType = CType,
+                A = A,
+                B = B,
+                C = C,
+                ALabel = ALabel,
+                BLabel = BLabel,
+                CLabel = CLabel,
+                Arguments = Arguments
+            };
+        }
+
         public string GetComponent(int index)
         {
             return index switch
