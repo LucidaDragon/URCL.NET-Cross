@@ -2,7 +2,7 @@
 
 namespace SpeedAsm
 {
-    public interface ILinePreparser
+    public interface IPostProcess
     {
         /// <summary>
         /// Called at the beginning of a parsing session.
@@ -19,12 +19,11 @@ namespace SpeedAsm
         /// </summary>
         void End(Parser parser);
         /// <summary>
-        /// Attempt to use the preprocessor to parse the specified line.
+        /// Post-process an instruction and return the resulting instructions.
         /// </summary>
         /// <param name="parser">The current parser.</param>
-        /// <param name="line">The line to parse.</param>
-        /// <param name="result">The resulting instructions, if successful.</param>
-        /// <returns>Whether the preparser successfully parsed the line.</returns>
-        bool TryParse(Parser parser, string line, out IEnumerable<Instruction> result);
+        /// <param name="inst">The instruction that was generated.</param>
+        /// <returns>The resulting instructions.</returns>
+        IEnumerable<Instruction> Process(Parser parser, Instruction inst);
     }
 }

@@ -5,6 +5,8 @@ namespace SpeedAsm
 {
     public enum Operation
     {
+        [Operation("exit")]
+        Exit,
         [Operation("=", true, true)]
         Set,
         [Operation("+", true, true, true)]
@@ -56,7 +58,13 @@ namespace SpeedAsm
         [Operation("ifnotcarry", true, destLabel: true)]
         BranchIfNotCarry,
         [Operation("ifnotsign", true, destLabel: true)]
-        BranchIfNotSign
+        BranchIfNotSign,
+        [Operation("call", true, destLabel: true)]
+        Call,
+        [Operation("return")]
+        Return,
+
+        CompilerGenerated
     }
 
     public static class OperationExtensions

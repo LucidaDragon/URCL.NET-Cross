@@ -32,6 +32,12 @@ namespace URCL.NET.PlatformSpeedAsm
 
             switch (inst.Operation)
             {
+                case global::SpeedAsm.Operation.Exit:
+                    result.Operation = Operation.HLT;
+                    result.AType = OperandType.None;
+                    result.BType = OperandType.None;
+                    result.CType = OperandType.None;
+                    break;
                 case global::SpeedAsm.Operation.Set:
                     result.Operation = inst.Source.Immediate ? Operation.IMM : Operation.MOV;
                     result.CType = OperandType.None;
@@ -206,6 +212,19 @@ namespace URCL.NET.PlatformSpeedAsm
                     result.Operation = Operation.BRN;
                     result.AType = OperandType.Label;
                     result.ALabel = GetLabel(result.A);
+                    result.BType = OperandType.None;
+                    result.CType = OperandType.None;
+                    break;
+                case global::SpeedAsm.Operation.Call:
+                    result.Operation = Operation.CAL;
+                    result.AType = OperandType.Label;
+                    result.ALabel = GetLabel(result.A);
+                    result.BType = OperandType.None;
+                    result.CType = OperandType.None;
+                    break;
+                case global::SpeedAsm.Operation.Return:
+                    result.Operation = Operation.RET;
+                    result.AType = OperandType.None;
                     result.BType = OperandType.None;
                     result.CType = OperandType.None;
                     break;

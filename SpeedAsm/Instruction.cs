@@ -3,14 +3,26 @@
     public class Instruction
     {
         public int Line;
+        public object Data;
         public Operation Operation;
         public Operand Destination;
         public Operand Source;
         public Operand Target;
 
+        public Instruction(object data)
+        {
+            Line = -1;
+            Data = data;
+            Operation = Operation.CompilerGenerated;
+            Destination = default;
+            Source = default;
+            Target = default;
+        }
+
         public Instruction(Operation op)
         {
             Line = -1;
+            Data = null;
             Operation = op;
             Destination = default;
             Source = default;

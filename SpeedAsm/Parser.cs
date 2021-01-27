@@ -16,6 +16,7 @@ namespace SpeedAsm
         private static readonly string Assignment = Operation.Set.GetString();
 
         public ICollection<ILinePreparser> LinePreparsers { get; } = new List<ILinePreparser>();
+        public ICollection<IPostProcess> PostProcesses { get; set; } = new List<IPostProcess>();
 
         private readonly Dictionary<string, ulong> Labels = new Dictionary<string, ulong>();
         private readonly Dictionary<string, ulong> Variables = new Dictionary<string, ulong>();
@@ -26,25 +27,54 @@ namespace SpeedAsm
         {
             foreach (var parser in LinePreparsers)
             {
-                parser.Begin();
+                parser.Begin(this);
+            }
+
+            foreach (var post in PostProcesses)
+            {
+                post.Begin(this);
             }
 
             var lineIndex = 0;
 
             foreach (var line in lines)
             {
-                var generated = Parse(line);
+                var generated = ParseLine(line);
 
                 foreach (var inst in generated)
                 {
                     inst.Line = lineIndex;
 
-                    foreach (var parser in LinePreparsers)
+                    IEnumerable<Instruction> result = new[] { inst };
+
+                    foreach (var post in PostProcesses)
                     {
-                        parser.Generated(inst);
+                        var buffer = new List<Instruction>();
+
+                        foreach (var subInst in result)
+                        {
+                            buffer.AddRange(post.Process(this, subInst));
+                        }
+
+                        result = buffer;
                     }
 
-                    yield return inst;
+                    foreach (var postInst in result)
+                    {
+                        postInst.Line = lineIndex;
+
+                        foreach (var parser in LinePreparsers)
+                        {
+                            parser.Generated(this, postInst);
+                        }
+
+                        foreach (var post in PostProcesses)
+                        {
+                            post.Generated(this, postInst);
+                        }
+
+                        yield return postInst;
+                    }
                 }
 
                 lineIndex++;
@@ -52,26 +82,31 @@ namespace SpeedAsm
 
             foreach (var parser in LinePreparsers)
             {
-                parser.End();
+                parser.End(this);
+            }
+
+            foreach (var post in PostProcesses)
+            {
+                post.End(this);
             }
         }
 
-        private IEnumerable<Instruction> Parse(string line)
+        public IEnumerable<Instruction> ParseLine(string line)
         {
             foreach (var parser in LinePreparsers)
             {
-                if (parser.TryParse(line, out IEnumerable<Instruction> result))
+                if (parser.TryParse(this, line, out IEnumerable<Instruction> result))
                 {
                     return result;
                 }
             }
 
-            var inst = Parse(Lex(line));
+            var inst = ParseLexResult(Lex(line));
 
             return inst != null ? new[] { inst } : new Instruction[0];
         }
 
-        private Instruction Parse(LexResult lex)
+        public Instruction ParseLexResult(LexResult lex)
         {
             if (lex.Valid)
             {
@@ -96,7 +131,7 @@ namespace SpeedAsm
                     {
                         var internalOp = lex.OperatorA.Substring(0, lex.OperatorA.Length - 1);
 
-                        return Parse(new LexResult
+                        return ParseLexResult(new LexResult
                         {
                             OperatorA = Assignment,
                             OperatorB = internalOp,
@@ -149,7 +184,7 @@ namespace SpeedAsm
             return null;
         }
 
-        private Operand GetValue(string str, bool wantsLabel)
+        public Operand GetValue(string str, bool wantsLabel)
         {
             var pending = GetImmediate(str);
 
@@ -165,7 +200,7 @@ namespace SpeedAsm
             }
         }
 
-        private Operand GetLabel(string name)
+        public Operand GetLabel(string name)
         {
             if (!Labels.TryGetValue(name, out ulong value))
             {
@@ -179,7 +214,7 @@ namespace SpeedAsm
             return new Operand(value, true, true);
         }
 
-        private Operand? GetImmediate(string str)
+        public Operand? GetImmediate(string str)
         {
             if (!ulong.TryParse(str, out ulong result))
             {
@@ -210,7 +245,7 @@ namespace SpeedAsm
             return new Operand(value, false, false);
         }
 
-        private static LexResult Lex(string line)
+        public static LexResult Lex(string line)
         {
             line = line.Trim();
 
