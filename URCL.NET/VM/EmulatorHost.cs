@@ -68,7 +68,7 @@ namespace URCL.NET.VM
 
                     if ((brk && !configuration.DisableBreak) || configuration.StepThrough)
                     {
-                        output(string.Empty);
+                        output(" ");
 
                         if (!configuration.StepThrough)
                         {
@@ -84,14 +84,14 @@ namespace URCL.NET.VM
                 }
                 catch (UrclMachine.InvalidOperationException ex)
                 {
-                    output(string.Empty);
+                    output(" ");
                     output($"***Fault! {ex.Message}***");
                     fault = true;
                     break;
                 }
             }
 
-            output(string.Empty);
+            output(" ");
 
             if (!machine.Halted && !fault) output("Maximum time for execution was exceeded!");
 
